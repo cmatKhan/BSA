@@ -1,7 +1,12 @@
-pandoc: '2.18'
+pandoc: 2.14.2
 pkgdown: 2.0.6
 pkgdown_sha: ~
 articles:
-  BSA: BSA.html
-last_built: 2022-08-01T21:38Z
+  BSA2: BSA2.html
+  BSA2_plots: BSA2_plots.html
+  processing_instructions: processing_instructions.html
+last_built: 2022-08-02T18:20Z
+urls:
+  reference: https://cmatkhan.github.io/BSA/reference
+  article: https://cmatkhan.github.io/BSA/articles
 

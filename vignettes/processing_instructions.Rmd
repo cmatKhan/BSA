@@ -1,0 +1,332 @@
+---
+title: "processing_instructions"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{processing_instructions}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+
+
+# Alignment
+
+The first step is to align the reads. I normally name the samples according with what
+they are, so that's are represented in the fastq file. The first step for me is 
+to createan ID file containing name of the sample and file full address, 
+separated by space.You can change that to other sep in the script. 
+I was considering changing the sep toa comma, to be easily exported from a 
+Excel. But haven't done that. Having the name of the sample in the fastq file 
+allows me to use a simple script tomake this ID file. For BSA2 samples, 
+you have to look at the excel sheet DanielSeqDatabase.xlsx to find where the 
+files of interest are. Then we would just do this:
+
+```{bash}
+
+cp /lts/mblab/personal/daniel.agustinho/raw/BSA2/*.fastq.gz /scratch/$USER/bsa2_fastq
+
+cd /scratch/$USER/bsa2 
+
+/scratch/mblab/daniel.agustinho/tools/IDmaker.sh ID
+
+```
+
+## IDmaker.sh
+
+```{bash}
+[chasem@login ~]$ cat /scratch/mblab/daniel.agustinho/tools/IDmaker.sh
+
+output=$1
+
+ls *R1_001.fastq.gz |awk -F '_' '{print $3}' > temp1.txt
+ls -d "$PWD"/*R1_001.fastq.gz > temp2.txt
+paste -d " " temp1.txt temp2.txt > $output
+rm temp1.txt temp2.txt
+
+```
+
+This will create a file called ID containing the name of the sample. Copy that 
+and the fastq.gz files to your analysis folder in scratch. Create some useful 
+folders that will beused by the scripts. Call alignments with NGM 
+(you can use another). Observe thatthe script has already the "KN99 reference" 
+that's older. Feel free to adjust that inyour own copied version of the script.
+
+```{bash}
+
+mkdir -p bams freebayes/indvVCF 
+
+sbatch raw log SVssbatch --array=1-$(wc -l < ID)
+
+/scratch/mblab/daniel.agustinho/tools/ngm.job ID bams KN99
+
+```
+
+## ngm.job
+
+```{bash}
+
+[chasem@login ~]$ cat /scratch/mblab/daniel.agustinho/tools/IDmaker.sh
+output=$1
+
+ls *R1_001.fastq.gz |awk -F '_' '{print $3}' > temp1.txt
+ls -d "$PWD"/*R1_001.fastq.gz > temp2.txt
+paste -d " " temp1.txt temp2.txt > $output
+rm temp1.txt temp2.txt
+
+
+
+[chasem@login ~]$ cat /scratch/mblab/daniel.agustinho/tools/ngm.job
+#!/usr/bin/env bash
+#SBATCH -o log/ngm-%a-out
+#SBATCH -e log/ngm-%a-err
+#SBATCH --mem=12000
+
+ml lumpy-sv
+ml bamaddrg
+ml nextgenmap/0.5.3 
+ml yaha/0.1.83
+ml picard-tools/2.10.0
+ml freebayes/1.1.0
+ml vcftools/0.1.14
+ml snpeff/4.1
+ml tabix
+
+# $1 is the list of IDs and sequencing tags, $2 is the directory with the FASTQ files, $3 is the directory to output to
+
+# No seq Folder on this version
+
+file=$1
+outputDir=$2
+genome=$3
+line=$SLURM_ARRAY_TASK_ID
+strainLine=`sed "${line}q;d" ${file}`
+Sample=`echo ${strainLine} | cut -d " " -f 2`
+name=`echo ${strainLine} | cut -d " " -f 1`
+
+# Defining the preset genomes: KN99, H99 and mouse
+if [ $genome =  "H99" ];then
+ reference="/scratch/mblab/daniel.agustinho/references/crNeoH99.fasta"
+ echo "You chose the H99 genome as a reference genome: ${reference}"
+elif [ $genome = "KN99" ];then
+ reference="/scratch/mblab/daniel.agustinho/references/crNeoKN99.fasta"
+ echo "You chose the KN99 genome as a reference genome: ${reference}"
+elif [ $genome = "mouse" ];then
+ reference="/scratch/mblab/daniel.agustinho/references/mm10.fa"
+ echo "You chose the MM10 mouse genome as a reference genome: ${reference}"
+else
+    echo "You chose a genome different from the preset ones (KN99, H99 or Mouse MM10)."
+    reference=$genome
+    echo $reference
+fi
+
+mkdir -p ${outputDir}/splitReads
+mkdir -p freebayes/indvVCF/snpEff/results/
+
+file2=${Sample/R1_001.fastq/R2_001.fastq}
+if [ -f $file2 ]; then
+	#This aligns to reference and converts to ngm.bam, plus indexes the bam
+ngm -X 100000000 -t 5 --rg-id ${name} --rg-sm ${name} -1 ${Sample} -2 ${file2} -r $reference |samtools view -bh - |samtools sort - |samtools rmdup - ${outputDir}/${name}.ngm.bam
+else
+#This aligns to reference and converts to ngm.bam, plus indexes the bam
+ngm -X 100000000 -t 5 --rg-id ${name} --rg-sm ${name} -q ${Sample} -r $reference |samtools view -bh - |samtools sort - |samtools rmdup - ${outputDir}/${name}.ngm.bam
+fi
+
+samtools index ${outputDir}/${name}.ngm.bam
+
+#This gets the split reads from the bam into a fastq for YAHA
+samtools view -h ${outputDir}/${name}.ngm.bam | /opt/apps/lumpy-sv/lumpy-sv-0.2.13/scripts/split_unmapped_to_fasta.pl -b 20 >${outputDir}/splitReads/${name}.split.fq
+
+yaha -t 15 -x ${reference/fasta/X11_01_02000S} -q ${outputDir}/splitReads/${name}.split.fq -osh stdout  -M 15 -H 2000 -L 11 |samtools view -Sbh - |samtools sort - > ${outputDir}/splitReads/${name}.split.ngm.bam
+
+#java -jar /opt/apps/picard-tools/2.10.0/picard.jar MergeSamFiles I=${outputDir}/${name}.ngm.bam I=${outputDir}/splitReads/${name}.split.ngm.bam O=${outputDir}/${name}.merged.ngm.bam USE_THREADING=true AS=true MERGE_SEQUENCE_DICTIONARIES=true
+
+java -jar /scratch/mblab/daniel.agustinho/tools/repo/PicardTools/picard.jar MergeSamFiles I=${outputDir}/${name}.ngm.bam I=${outputDir}/splitReads/${name}.split.ngm.bam O=${outputDir}/${name}.merged.ngm.bam USE_THREADING=true AS=true MERGE_SEQUENCE_DICTIONARIES=true
+
+bamaddrg -s ${name} -b ${outputDir}/${name}.merged.ngm.bam > ${outputDir}/${name}.merged.tagged.ngm.bam
+#bamaddrg -s ${name} -b ${outputDir}/${name}.ngm.bam > ${outputDir}/${name}.tagged.ngm.bam
+samtools index ${outputDir}/${name}.merged.tagged.ngm.bam
+
+rm ${outputDir}/${name}.ngm.bam.bai
+rm ${outputDir}/${name}.merged.ngm.bam
+rm ${outputDir}/${name}.ngm.bam
+
+sbatch /scratch/mblab/daniel.agustinho/tools/cnvnator.job $file bams/ SVs/ $line $genome
+sbatch /scratch/mblab/daniel.agustinho/tools/delly.sh $file bams/ SVs/ $reference $line
+ 
+freebayes -F 0.75 -! 5 -p 1 --min-mapping-quality 30 -f $reference ${outputDir}/${name}.merged.tagged.ngm.bam > freebayes/indvVCF/$name.vcf 
+
+java -jar /home/daniel.agustinho/miniconda3/pkgs/snpeff-4.3.1t-0/share/snpeff-4.3.1t-0/snpEff.jar -c /home/daniel.agustinho/miniconda3/pkgs/snpeff-4.3.1t-0/share/snpeff-4.3.1t-0/snpEff.config -s snpEff/results/${name}.html -v ASM221672v1 freebayes/indvVCF/$name.vcf > freebayes/indvVCF/$name.ann.vcf
+bgzip freebayes/indvVCF/$name.ann.vcf
+tabix freebayes/indvVCF/$name.ann.vcf.gz
+
+
+```
+
+This will create alignment files (bam and bai) for each sample in the bams 
+folder. Itwill also call CNVnator for each one of them, generating tables and 
+CNV VCFs with the same sample names in SVs/indvCNVs folder. It will call 
+Delly for SVs, in theSVs/delly folder. But recently I observed that Delly sucks. 
+I recommend using Manta instead. It will also call individual VCFs using 
+freebayes and annotating the withSNPEff in the freebayes/indvVCF folder. 
+If you have any problems or errors, check the log/ folder
+
+# Variant calling for BSA analysis
+
+When this is finished, you should call freebayes again for the population VCF. 
+First, create a list of bams, and use those for the freebayes call
+
+```{bash}
+
+ls -d "$PWD"/bams/*.merged.tagged.ngm.bam >> bamList
+
+/scratch/mblab/daniel.agustinho/tools/sbatch_maker/freebayes.bamList.sbatch \
+  KN99 \
+  BSA2 \
+  bamList
+
+```
+
+## freebayes.bamList.sbatch
+
+```{bash}
+[chasem@login ~]$ cat /scratch/mblab/daniel.agustinho/tools/sbatch_maker/freebayes.bamList.sbatch
+#!/usr/bin/env bash
+
+#SBATCH -o freebayes-out
+#SBATCH -e freebayes-err
+#SBATCH --mem=50000
+#SBATCH --mail-type=END,FAIL
+#SBATCH --array 1-17%17
+ml freebayes/1.1.0
+ml vcftools/0.1.14
+
+genome=$1 # Either H99 or KN99
+name=$2 #This is the name of the clinical strain used for basis of the comparison
+bamList=$3
+
+if [ $genome =  "H99" ];then
+ reference="/scratch/mblab/daniel.agustinho/references/crNeoH99.fasta"
+elif [ $genome = "KN99" ];then
+ reference="/scratch/mblab/daniel.agustinho/references/crNeoKN99.fasta"
+else
+    echo "Valid genomes are H99 or KN99. Review your 4th  argument."
+    exit
+fi
+
+/scratch/mblab/daniel.agustinho/tools/freebayes.bam_list.job $reference $name $bamList ${SLURM_ARRAY_TASK_ID}
+
+```
+
+## freebayes.bam_list.job
+
+```{bash}
+
+[chasem@login ~]$ cat /scratch/mblab/daniel.agustinho/tools/freebayes.bam_list.job
+#!/usr/bin/env bash
+#SBATCH --mem=60G
+
+ml freebayes/1.1.0
+ml vcftools/0.1.14
+
+reference=$1
+name=$2
+bamList=$3
+region=$4
+chrom=$(gawk '{print $1}' $reference.fai |sed "${region}q;d")
+parentVCF=$5
+echo $parentVCF
+mkdir -p freebayes
+
+if [ -z $5  ];then
+ freebayes -! 5 -F 0.75 -p 1 --min-mapping-quality 30 -r $chrom -f $reference --bam-list $bamList > freebayes/freebayes.$name.$chrom.vcf
+else
+ freebayes -l -@ $parentVCF -! 5 -F 0.75 -p 1 --min-mapping-quality 30 -r $chrom -f $reference --bam-list $bamList > freebayes/freebayes.$name.$chrom.vcf
+fi
+
+```
+
+This will create one VCF file per chromosome in the freebayes folder. Check if 
+it ransmoothly (some samples may require more memmory), and if it did, we will 
+merge allof those together using the VCFmerger.sh script. This script merges 
+them in one bigVCF and deletes the VCF for individual chromosomes, so be sure 
+the previous stepran smoothly. It also calls the next script, that makes tables 
+from the VCF file that canbe easily read by the R script that will do the analysis.
+
+```{bash}
+scratch/mblab/daniel.agustinho/tools/VCFmerger.sh BSA2
+```
+
+## VCFmerger.sh
+
+```{bash}
+[chasem@login ~]$ cat /scratch/mblab/daniel.agustinho/tools/VCFmerger.sh 
+#!/usr/bin/env bash
+#SBATCH -o log/VCFmerger_%j-out
+#SBATCH -e log/VCFmerger_%j-err
+#SBATCH --mem=50G
+
+ml vcftools/0.1.14
+ml R
+
+name=$1
+
+mkdir -p freebayes/VCFtables
+
+grep '#' freebayes/freebayes.${name}.chr1.vcf>freebayes/$name.vcf
+for i in chr{1..14} chrM NAT G418
+do cat freebayes/freebayes.${name}.$i.vcf | grep -v '^#' >> freebayes/$name.vcf
+
+done
+
+vcftools --vcf freebayes/${name}.vcf --out freebayes/${name}.dusted.vcf --exclude-bed /scratch/mblab/daniel.agustinho/references/dustmasked.KN99.bed --recode --recode-INFO-all
+mv freebayes/$name.dusted.vcf.recode.vcf freebayes/$name.clean.vcf
+
+rm freebayes/freebayes.${name}.chr*.vcf
+rm freebayes/$name.dusted.vcf.recode.vcf
+rm freebayes/${name}.vcf
+
+# Starting the sorting.
+sed -e "77s/#//" freebayes/$name.clean.vcf > freebayes/$name.clean.vcf.test
+Rscript /scratch/mblab/daniel.agustinho/tools/vcfSorter.R freebayes/$name.clean.vcf.test
+
+grep '^##' freebayes/$name.clean.vcf  > freebayes/$name.sorted.vcf # ${file/clean.vcf/sorted.vcf}
+cat data.vcf >> freebayes/$name.sorted.vcf
+
+sed -e "77s/CHROM/#CHROM/" freebayes/$name.sorted.vcf > freebayes/$name.IGV.vcf
+
+rm data.vcf
+rm freebayes/$name.clean.vcf.test freebayes/$name.clean.vcf freebayes/$name.sorted.vcf
+
+/scratch/mblab/daniel.agustinho/tools/VCF_tabler.sh freebayes/$name.IGV.vcf freebayes/VCFtables
+rm freebayes/VCFtables/.txt
+/scratch/mblab/daniel.agustinho/tools/strainAnalyzer.sh
+./popAnalyzer.sh
+
+```
+
+# Statistical analysis
+
+__NOTE__ these scripts have been incorporated into the `R/` directory or 
+other vignettes. Below is from Daniel:
+
+That should create a BSA2.IGV.vcf file in the freebayes folder. You can look at 
+it on IGV etc. It will also create a folder freebayes/VCFtables that contains 
+one table (txtfile) for each sample that was called used as input for freebayes. 
+Transfer those toyour personal laptop to analyse using the R script:  
+
+- `BSA2Analysis.R`
+
+Adjust the script to get the input from the proper folder (where the txt files 
+you copied from the server are). This will generate a BSA2.RData file 
+containing the analysis. You can use it in the second R script to make plots. 
+
+- `BSA2plots.R`
+

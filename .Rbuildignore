@@ -1,3 +1,8 @@
 ^BSA\.Rproj$
 ^\.Rproj\.user$
 ^dev$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^\.github$
+^data$

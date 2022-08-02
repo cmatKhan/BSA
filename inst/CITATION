@@ -1,0 +1,29 @@
+pkgVer <- function(pkg) {
+    if (!exists("meta") || is.null(meta)) meta <- packageDescription(pkg)
+    ver <- meta$Version
+    paste0('https://github.com/cmatKhan/BSA/', pkg, ' - R package version ', ver)
+}
+
+c(
+
+    bibentry(bibtype="manual",
+        title = "BSA -temp1",
+        author = personList(
+            as.person("cmatKhan")
+        ),
+        year = format(Sys.Date(), "%Y"),
+        url = "http://www.bioconductor.org/packages/BSA",
+        note = pkgVer('BSA'),
+        doi = '10.18129/B9.bioc.BSA'
+    ),
+    bibentry(bibtype="article",
+        title = "BSA - temp2",
+        author = personList(
+            as.person("cmatKhan")
+        ),
+        year = format(Sys.Date(), "%Y"),
+        journal = "bioRxiv",
+        doi = "10.1101/TODO",
+        url = "https://www.biorxiv.org/content/10.1101/TODO"
+    )
+)

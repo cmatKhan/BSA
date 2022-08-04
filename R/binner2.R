@@ -88,7 +88,3 @@ binner2 <- function(input, bin.size = 10000) {
 }
 
 
-lapply(names(allPoolsZoom),
-       function(x) binner2(allPoolsZoom[[grep(x, names(allPoolsZoom))]], bin.size = chosenSize))
-
-

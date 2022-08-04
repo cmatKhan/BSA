@@ -86,9 +86,9 @@
     
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/cmatKhan/BSA" class="external-link">BSA</a></span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/cmatKhan/BSA" class="external-link">BSA</a></span><span class="op">)</span></span>
+<span></span>
+<span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyverse.tidyverse.org" class="external-link">tidyverse</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/hadley/reshape" class="external-link">reshape2</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">RColorBrewer</span><span class="op">)</span></span>
@@ -96,17 +96,21 @@
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">Rmisc</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">grid</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">gridExtra</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://here.r-lib.org/" class="external-link">here</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/load.html" class="external-link">load</a></span><span class="op">(</span>file <span class="op">=</span> <span class="st">"BSA2.RData"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">### PLOTS</span></span>
+<span><span class="co">#load(file = here("data/BSA2_reproduced_20220804.RData"))</span></span>
+<span><span class="co">#plot_out_prefix = here("data/EXP#067/Plots")</span></span>
+<span><span class="co">#dir.create(plot_out_prefix,recursive = TRUE)</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">### PLOTS</span></span>
 <span></span>
 <span><span class="va">chosenSize</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
 <span><span class="va">Pools</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">allPools</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">ptm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/proc.time.html" class="external-link">proc.time</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">no_cores</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">pools_filteredBSA</span><span class="op">)</span><span class="op">)</span> <span class="co"># detectCores()-1 #Use all cores but one, so the computer can do other things while it runs</span></span>
+<span><span class="co"># detectCores()-1 #Use all cores but one, so the computer can do other things while it runs</span></span>
+<span><span class="va">no_cores</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span><span class="op">)</span><span class="op">-</span><span class="fl">1</span> <span class="co"># length(names(pools_filteredBSA)) </span></span>
 <span><span class="va">cl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/parallel/makeCluster.html" class="external-link">makeCluster</a></span><span class="op">(</span><span class="va">no_cores</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/parallel/clusterApply.html" class="external-link">clusterExport</a></span><span class="op">(</span><span class="va">cl</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"pools_filteredBSA"</span>, <span class="st">"allPoolsInOne_filteredBSA"</span>, <span class="st">"binner2"</span>, <span class="st">"Pools"</span>, <span class="st">"allPools"</span>, <span class="st">"chosenSize"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co"># Calling the binner2 in parallel</span></span>
@@ -119,9 +123,9 @@
 <span><span class="co"># allPools=parLapply(cl,names(allPoolsInOne_filteredBSA),</span></span>
 <span><span class="co">#                  function(x){binner2(allPoolsInOne_filteredBSA[[grep(x, names(allPoolsInOne_filteredBSA))]], bin.size = chosenSize)})</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/parallel/makeCluster.html" class="external-link">stopCluster</a></span><span class="op">(</span><span class="va">cl</span><span class="op">)</span> <span class="co"># Closing the parallel cluster</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/proc.time.html" class="external-link">proc.time</a></span><span class="op">(</span><span class="op">)</span> <span class="op">-</span> <span class="va">ptm</span></span>
-<span></span>
-<span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">allPoolsInOne_filteredBSA</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/proc.time.html" class="external-link">proc.time</a></span><span class="op">(</span><span class="op">)</span> <span class="op">-</span> <span class="va">ptm</span></span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">allPoolsInOne_filteredBSA</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">allPools</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/binner2.html">binner2</a></span><span class="op">(</span><span class="va">allPoolsInOne_filteredBSA</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span>,</span>
 <span>    bin.size <span class="op">=</span> <span class="va">chosenSize</span></span>
 <span>  <span class="op">)</span></span>
@@ -129,9 +133,9 @@
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">Pools</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">pools_filteredBSA</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">allPools</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">allPoolsInOne_filteredBSA</span><span class="op">)</span></span>
-<span><span class="va">condition</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"YPD"</span>, <span class="st">"Lungs"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">###### For plots with smoothed Delta SNP #####</span></span>
+<span><span class="va">condition</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"YPD"</span>, <span class="st">"Lungs"</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">###### For plots with smoothed Delta SNP #####</span></span>
 <span><span class="va">samples</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">samples</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">)</span>, FUN <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
@@ -160,9 +164,9 @@
 <span>      Condition <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">condition</span><span class="op">[</span><span class="va">x</span><span class="op">]</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">allPools</span><span class="op">[[</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">allPools</span><span class="op">)</span><span class="op">[</span><span class="va">x</span><span class="op">]</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span>    <span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">samples</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">allPools</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">)</span><span class="op">]</span></span>
-<span></span>
-<span><span class="co">###### For plots with NON-smoothed Delta SNP #####</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">samples</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">allPools</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">###### For plots with NON-smoothed Delta SNP #####</span></span>
 <span><span class="va">samplesNonSmooth</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">samplesNonSmooth</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">)</span>, FUN <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
@@ -192,35 +196,31 @@
 <span>    <span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">samplesNonSmooth</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">allPools</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">)</span><span class="op">]</span></span>
-<span></span>
-<span></span>
-<span></span>
-<span></span>
-<span><span class="co"># This is a table with the Max and Min of ∆SNP for each position.</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">samplesNonSmooth</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">allPools</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># This is a table with the Max and Min of ∆SNP for each position.</span></span>
 <span><span class="va">MaxAndMins</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">allPoolsInOne_filteredBSA</span><span class="op">[[</span><span class="st">"Y"</span><span class="op">]</span><span class="op">]</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span>, <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  Min_SNPchange <span class="op">=</span> <span class="op">-</span><span class="op">(</span><span class="va">allPoolsInOne_filteredBSA</span><span class="op">[[</span><span class="st">"Y"</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">SNPindex.LOW</span><span class="op">)</span>,</span>
 <span>  Max_SNPchange <span class="op">=</span> <span class="fl">1</span> <span class="op">-</span> <span class="op">(</span><span class="va">allPoolsInOne_filteredBSA</span><span class="op">[[</span><span class="st">"Y"</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">SNPindex.LOW</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">)</span> <span class="co"># The SNPindex.LOW should be the same for YPD and Lungs....</span></span>
 <span></span>
 <span></span>
-<span><span class="va">MaxAndMins</span> <span class="op">&lt;-</span> <span class="va">MaxAndMins</span> <span class="op">%&gt;%</span> <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="op">!</span><span class="op">(</span><span class="va">CHROM</span> <span class="op">==</span> <span class="st">"chr2"</span> <span class="op">&amp;</span> <span class="op">(</span><span class="va">POS</span> <span class="op">==</span> <span class="fl">283162</span> <span class="op">|</span> <span class="va">POS</span> <span class="op">==</span> <span class="fl">283652</span> <span class="op">|</span> <span class="op">(</span><span class="va">POS</span> <span class="op">&gt;</span> <span class="fl">466000</span> <span class="op">&amp;</span> <span class="va">POS</span> <span class="op">&lt;</span> <span class="fl">467000</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="co"># This mutation was erased in the addition of the drug marker in the C8 parent (It was in the arm).</span></span>
-<span></span>
-<span><span class="co"># PLOTS</span></span>
+<span><span class="va">MaxAndMins</span> <span class="op">&lt;-</span> <span class="va">MaxAndMins</span> <span class="op">%&gt;%</span> <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="op">!</span><span class="op">(</span><span class="va">CHROM</span> <span class="op">==</span> <span class="st">"chr2"</span> <span class="op">&amp;</span> <span class="op">(</span><span class="va">POS</span> <span class="op">==</span> <span class="fl">283162</span> <span class="op">|</span> <span class="va">POS</span> <span class="op">==</span> <span class="fl">283652</span> <span class="op">|</span> <span class="op">(</span><span class="va">POS</span> <span class="op">&gt;</span> <span class="fl">466000</span> <span class="op">&amp;</span> <span class="va">POS</span> <span class="op">&lt;</span> <span class="fl">467000</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="co"># This mutation was erased in the addition of the drug marker in the C8 parent (It was in the arm).</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># PLOTS</span></span>
 <span><span class="co"># The IRs</span></span>
 <span><span class="va">IR_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">IR_list</span><span class="op">[[</span><span class="st">"chr1"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1262.121</span>, <span class="fl">1340.862</span><span class="op">)</span></span>
 <span><span class="va">IR_list</span><span class="op">[[</span><span class="st">"chr2"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">283.162</span>, <span class="fl">468.855</span><span class="op">)</span></span>
 <span><span class="va">IR_list</span><span class="op">[[</span><span class="st">"chr3"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">15.943</span>, <span class="fl">117.260</span><span class="op">)</span></span>
 <span><span class="va">IR_list</span><span class="op">[[</span><span class="st">"chr7"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">19.297</span>, <span class="fl">146.051</span><span class="op">)</span></span>
-<span><span class="va">IR_list</span><span class="op">[[</span><span class="st">"chr8"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">13.998</span>, <span class="fl">55.13</span><span class="op">)</span></span>
+<span><span class="va">IR_list</span><span class="op">[[</span><span class="st">"chr8"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">13.998</span>, <span class="fl">55.13</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Defining temp, a subset with only the chosen chromosome.</span></span>
 <span></span>
-<span></span>
-<span><span class="co"># Defining temp, a subset with only the chosen chromosome.</span></span>
-<span></span>
-<span><span class="va">dataToUse</span> <span class="op">&lt;-</span> <span class="va">samplesNonSmooth</span></span>
-<span></span>
-<span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fl">14</span><span class="op">)</span> <span class="op">{</span></span>
+<span><span class="va">dataToUse</span> <span class="op">&lt;-</span> <span class="va">samplesNonSmooth</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fl">14</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">temp</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">PoolsCombine</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">newMinsAndMax</span><span class="op">)</span></span>
@@ -294,24 +294,25 @@
 <span>      text <span class="op">=</span> <span class="fu">element_text</span><span class="op">(</span>family <span class="op">=</span> <span class="st">"sans"</span><span class="op">)</span></span>
 <span>    <span class="op">)</span></span>
 <span></span>
-<span>  <span class="fu">ggsave</span><span class="op">(</span><span class="va">p1</span>,</span>
-<span>    filename <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"/Users/danielagustinho/GoogleDrive/WashU/DNA/EXP#067/Plots/Chromosome_"</span>, <span class="va">i</span>, <span class="st">"_nonSmoothed.1kb.pdf"</span><span class="op">)</span>, dpi <span class="op">=</span> <span class="fl">500</span>, height <span class="op">=</span> <span class="fl">9</span>,</span>
-<span>    units <span class="op">=</span> <span class="st">"in"</span>, width <span class="op">=</span> <span class="fl">16</span></span>
+<span>  <span class="fu">ggsave</span><span class="op">(</span>filename <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">plot_out_prefix</span>,<span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Chromosome_"</span>, <span class="va">i</span>, <span class="st">"_nonSmoothed.1kb.pdf"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    <span class="va">p1</span>,</span>
+<span>    dpi <span class="op">=</span> <span class="fl">500</span>, </span>
+<span>    height <span class="op">=</span> <span class="fl">9</span>,</span>
+<span>    units <span class="op">=</span> <span class="st">"in"</span>, </span>
+<span>    width <span class="op">=</span> <span class="fl">16</span></span>
 <span>  <span class="op">)</span></span>
 <span></span>
-<span>  <span class="fu">ggsave</span><span class="op">(</span><span class="va">p2</span>,</span>
-<span>    filename <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"/Users/danielagustinho/GoogleDrive/WashU/DNA/EXP#067/Plots/Chromosome_"</span>, <span class="va">i</span>, <span class="st">"_Lungs15days_nonSmoothed.1kb.pdf"</span><span class="op">)</span>, dpi <span class="op">=</span> <span class="fl">500</span>, height <span class="op">=</span> <span class="fl">9</span>,</span>
-<span>    units <span class="op">=</span> <span class="st">"in"</span>, width <span class="op">=</span> <span class="fl">16</span></span>
-<span>  <span class="op">)</span></span>
-<span></span>
-<span>  <span class="fu">ggsave</span><span class="op">(</span><span class="va">p3</span>,</span>
-<span>    filename <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"/Users/danielagustinho/GoogleDrive/WashU/DNA/EXP#067/Plots/Chromosome_"</span>, <span class="va">i</span>, <span class="st">"_Brains15days_nonSmoothed.1kb.pdf"</span><span class="op">)</span>, dpi <span class="op">=</span> <span class="fl">500</span>, height <span class="op">=</span> <span class="fl">9</span>,</span>
-<span>    units <span class="op">=</span> <span class="st">"in"</span>, width <span class="op">=</span> <span class="fl">16</span></span>
-<span>  <span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span></span>
-<span></span>
-<span><span class="co">#### IR-1 PLOTS</span></span>
+<span>  <span class="co"># ggsave(p2,</span></span>
+<span>  <span class="co">#   filename = file.path(plot_out_prefix, paste0("Chromosome_", i, "_Lungs15days_nonSmoothed.1kb.pdf")), dpi = 500, height = 9,</span></span>
+<span>  <span class="co">#   units = "in", width = 16</span></span>
+<span>  <span class="co"># )</span></span>
+<span>  <span class="co"># </span></span>
+<span>  <span class="co"># ggsave(p3,</span></span>
+<span>  <span class="co">#   filename = file.path(plot_out_prefix, paste0("Chromosome_", i, "_Brains15days_nonSmoothed.1kb.pdf")), dpi = 500, height = 9,</span></span>
+<span>  <span class="co">#   units = "in", width = 16</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">#### IR-1 PLOTS</span></span>
 <span><span class="va">i</span> <span class="op">&lt;-</span> <span class="fl">2</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">temp</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">PoolsCombine</span><span class="op">)</span></span>
@@ -383,14 +384,16 @@
 <span>    panel.background <span class="op">=</span> <span class="fu">element_rect</span><span class="op">(</span>fill <span class="op">=</span> <span class="st">"white"</span>, colour <span class="op">=</span> <span class="st">"black"</span>, size <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>,</span>
 <span>    text <span class="op">=</span> <span class="fu">element_text</span><span class="op">(</span>family <span class="op">=</span> <span class="st">"sans"</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
-<span><span class="va">p1</span></span>
 <span></span>
-<span><span class="fu">ggsave</span><span class="op">(</span><span class="va">p1</span>,</span>
-<span>  filename <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"/Users/danielagustinho/GoogleDrive/WashU/DNA/EXP#067/Plots/IR-1_5kb-NONsmoothed.pdf"</span><span class="op">)</span>, dpi <span class="op">=</span> <span class="fl">500</span>, height <span class="op">=</span> <span class="fl">9</span>,</span>
-<span>  units <span class="op">=</span> <span class="st">"in"</span>, width <span class="op">=</span> <span class="fl">16</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">### IR-1 Zoom PLOT</span></span>
+<span><span class="fu">ggsave</span><span class="op">(</span>filename <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">plot_out_prefix</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"IR-1_5kb-NONsmoothed.pdf"</span><span class="op">)</span><span class="op">)</span>, </span>
+<span>       <span class="va">p1</span>,</span>
+<span>       dpi <span class="op">=</span> <span class="fl">500</span>, </span>
+<span>       height <span class="op">=</span> <span class="fl">9</span>,</span>
+<span>       units <span class="op">=</span> <span class="st">"in"</span>, </span>
+<span>       width <span class="op">=</span> <span class="fl">16</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">### IR-1 Zoom PLOT</span></span>
 <span><span class="va">PoolsZoom</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">allPoolsZoom</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">pools_filteredBSA</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
@@ -417,14 +420,14 @@
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">PoolsZoom</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"P1.Y"</span>, <span class="st">"P1.L"</span>, <span class="st">"P2.Y"</span>, <span class="st">"P2.L"</span>, <span class="st">"P3.Y"</span>, <span class="st">"P3.L"</span>, <span class="st">"P4.Y"</span>, <span class="st">"P4.L"</span>, <span class="st">"P5.Y"</span>, <span class="st">"P5.L"</span>, <span class="st">"Pall.Y"</span>, <span class="st">"Pall.L"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">allPoolsZoom</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="st">"L"</span><span class="op">)</span></span>
-<span><span class="va">condition</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"YPD"</span>, <span class="st">"Inoculum"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">chosenSize</span> <span class="op">&lt;-</span> <span class="fl">500</span></span>
+<span><span class="va">condition</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"YPD"</span>, <span class="st">"Inoculum"</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">chosenSize</span> <span class="op">&lt;-</span> <span class="fl">500</span></span>
 <span><span class="va">Pools</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">allPools</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">ptm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/proc.time.html" class="external-link">proc.time</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">no_cores</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span> <span class="co"># Use all cores but one, so the computer can do other things while it runs</span></span>
+<span><span class="va">no_cores</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span><span class="op">)</span> <span class="op">-</span> <span class="fl">3</span> <span class="co"># Use all cores but one, so the computer can do other things while it runs</span></span>
 <span><span class="va">cl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/parallel/makeCluster.html" class="external-link">makeCluster</a></span><span class="op">(</span><span class="va">no_cores</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/parallel/clusterApply.html" class="external-link">clusterExport</a></span><span class="op">(</span><span class="va">cl</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"PoolsZoom"</span>, <span class="st">"allPoolsZoom"</span>, <span class="st">"binner2"</span>, <span class="st">"Pools"</span>, <span class="st">"allPools"</span>, <span class="st">"chosenSize"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co"># Calling the binner2 in parallel</span></span>
@@ -445,9 +448,9 @@
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">Pools</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"P1.Y"</span>, <span class="st">"P1.L"</span>, <span class="st">"P2.Y"</span>, <span class="st">"P2.L"</span>, <span class="st">"P3.Y"</span>, <span class="st">"P3.L"</span>, <span class="st">"P4.Y"</span>, <span class="st">"P4.L"</span>, <span class="st">"P5.Y"</span>, <span class="st">"P5.L"</span>, <span class="st">"Pall.Y"</span>, <span class="st">"Pall.L"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">allPools</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="st">"L"</span><span class="op">)</span></span>
-<span><span class="va">condition</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"YPD"</span>, <span class="st">"Inoculum"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">samples</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>, FUN <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">{</span></span>
+<span><span class="va">condition</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"YPD"</span>, <span class="st">"Inoculum"</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">samples</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>, FUN <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>    CHROM <span class="op">=</span> <span class="va">allPools</span><span class="op">[[</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">allPools</span><span class="op">)</span><span class="op">[</span><span class="va">x</span><span class="op">]</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">CHROM</span>,</span>
 <span>    binFloor <span class="op">=</span> <span class="va">allPools</span><span class="op">[[</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">allPools</span><span class="op">)</span><span class="op">[</span><span class="va">x</span><span class="op">]</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">binFloor</span>,</span>
@@ -489,9 +492,9 @@
 <span><span class="va">PoolsCombine</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">eachPool</span>, FUN <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">z</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">temp</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="va">x</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">temp</span><span class="op">)</span><span class="op">)</span><span class="op">]</span>, <span class="va">temp</span><span class="op">$</span><span class="va">Condition</span>, sep <span class="op">=</span> <span class="st">"_"</span><span class="op">)</span></span>
 <span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">z</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu">ggplot</span><span class="op">(</span>data <span class="op">=</span> <span class="va">temp</span>, <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">temp</span><span class="op">$</span><span class="va">binMiddle</span> <span class="op">/</span> <span class="fl">1000</span>, y <span class="op">=</span> <span class="va">temp</span><span class="op">$</span><span class="va">All_pools</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu">ggplot</span><span class="op">(</span>data <span class="op">=</span> <span class="va">temp</span>, <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">temp</span><span class="op">$</span><span class="va">binMiddle</span> <span class="op">/</span> <span class="fl">1000</span>, y <span class="op">=</span> <span class="va">temp</span><span class="op">$</span><span class="va">All_pools</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">geom_pointrange</span><span class="op">(</span></span>
 <span>    data <span class="op">=</span> <span class="va">temp</span>,</span>
 <span>    <span class="fu">aes</span><span class="op">(</span></span>
@@ -545,7 +548,7 @@
 <span>  <span class="op">)</span></span>
 <span></span>
 <span></span>
-<span><span class="fu">ggsave</span><span class="op">(</span><span class="va">p1</span>, filename <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"/Users/danielagustinho/GoogleDrive/WashU/DNA/EXP#067/Plots/IR-1zoom.pdf"</span><span class="op">)</span>, dpi <span class="op">=</span> <span class="fl">500</span>, height <span class="op">=</span> <span class="fl">9</span>, units <span class="op">=</span> <span class="st">"in"</span>, width <span class="op">=</span> <span class="fl">16</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">ggsave</span><span class="op">(</span><span class="va">p1</span>, filename <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">plot_out_prefix</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"IR-1zoom.pdf"</span><span class="op">)</span><span class="op">)</span>, dpi <span class="op">=</span> <span class="fl">500</span>, height <span class="op">=</span> <span class="fl">9</span>, units <span class="op">=</span> <span class="st">"in"</span>, width <span class="op">=</span> <span class="fl">16</span><span class="op">)</span></span></code></pre></div>
   </main>
 </div>
 

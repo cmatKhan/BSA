@@ -37,7 +37,7 @@ analyzer = function(SNPcomparison,
     dplyr::filter(!is.na(SNPindex.LOW) | !is.na(SNPindex.HIGH)) %>%
     # for instance, if you wish to remove chrM, then pass c("chrM") to
     # filter_chr_list
-    if(filter_chr_list) dplyr::filter(!CHROM %in% filter_chr_list) else .
+    if(is.null(filter_chr_list)) . else dplyr::filter(!CHROM %in% filter_chr_list)
 
   quants <- stats::quantile(SNPcomparison$DP.LOW + SNPcomparison$DP.HIGH,
                      na.rm = T,

@@ -15,8 +15,17 @@ binner2(input, bin.size = 10000)
 OUTPUT_DESCRIPTION
 }
 \description{
-Different from binner1
+how diff than binner?
+
+This is a function to make a new table with different
+bin sizes and the average of ∆\% observed in the positions inside the bin.
+You can play with the bin size, and it uses the output of percenter
+as input.
 }
 \details{
 DETAILS
+}
+\note{
+a bin is considered significant if half or more of the
+snps in the bin are significant
 }

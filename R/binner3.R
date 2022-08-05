@@ -1,5 +1,7 @@
+# TODO complete documentation
+
 #' @title Another binner
-#' @description see binner and binner2
+#' @description how diff than binner?
 #'
 #' @param input PARAM_DESCRIPTION
 #' @param bin.size PARAM_DESCRIPTION, Default: 10000

@@ -1,18 +1,20 @@
-#
+#TODO complete documentation. Why are there so many binners? what is the diff?
+# could we consolidate these into 1, with arguments which allow for any diffs
+# between them?
+
 #' @title Binner -- the first
 #' @description This is a function to make a new table with different bin sizes
 #'   and the average of ∆% observed in the positions inside the bin.
 #'   You can play with the bin size, and it uses the output of percenter as input.
 #' @param input PARAM_DESCRIPTION
-#' @param bin.size PARAM_DESCRIPTION, Default: 10000
+#' @param bin.size The size of the window to be used in the smoothing.
+#'    Default: 10000
 #'
 #' @return OUTPUT_DESCRIPTION
 #'
 #' @details DETAILS
 #'
 #' @export
-#'
-#' @importFrom timeSeries colnames
 binner <- function(input, bin.size = 10000) {
 
   # TODO replace with BSgenome
@@ -58,7 +60,7 @@ binner <- function(input, bin.size = 10000) {
     }
   }
 
-  timeSeries::colnames(klaus) <- c("Chr", "binFloor", "binCeiling", "binMiddle",
+  colnames(klaus) <- c("Chr", "binFloor", "binCeiling", "binMiddle",
                        "lungMean", "YPDmean", "mut_perBin", "Bin_size")
   klaus[, 2:ncol(klaus)] <- sapply(klaus[, 2:ncol(klaus)], as.numeric)
 

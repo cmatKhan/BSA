@@ -1,16 +1,26 @@
+#TODO complete documentation
+
 #' @title Binner the second
-#' @description Different from binner1
+#' @description how diff than binner?
+#'
+#' @note a bin is considered significant if half or more of the
+#'   snps in the bin are significant
 #'
 #' @param input PARAM_DESCRIPTION
 #' @param bin.size PARAM_DESCRIPTION, Default: 10000
+#TODO complete documention
+
+#' @title binner2 -- another binner
+#' @description This is a function to make a new table with different
+#'   bin sizes and the average of ∆% observed in the positions inside the bin.
+#'   You can play with the bin size, and it uses the output of percenter
+#'   as input.
 #'
 #' @return OUTPUT_DESCRIPTION
 #'
 #' @details DETAILS
 #'
 #' @export
-#'
-#' @importFrom timeSeries colnames
 binner2 <- function(input, bin.size = 10000) {
 
   # TODO replace with BSgenome
@@ -35,16 +45,20 @@ binner2 <- function(input, bin.size = 10000) {
     for (z in 1:ceiling(KN99_gen[i, 2] / bin.size)) {
       partial <- data.frame()
       bin.ceiling <- bin.floor + bin.size
+      # check number of snps in bin
       partial <-
         subset(input,
                CHROM == KN99_gen$Chr[i] & POS > bin.floor & POS <= bin.ceiling)
+      # if 0, return NA
       if (nrow(partial) == 0) {
         deltaSNP <- NA
         triCubeDeltaSNP <- NA
-      } else if (nrow(partial) == 1) {
+      # if 1, return the sig of the snp
+        } else if (nrow(partial) == 1) {
         deltaSNP <- partial$deltaSNP
         triCubeDeltaSNP <- partial$tricubeDeltaSNP
-      } else {
+      # else return mean
+        } else {
         deltaSNP <- mean(partial$deltaSNP, na.rm = T)
         triCubeDeltaSNP <- mean(partial$tricubeDeltaSNP, na.rm = T)
       }
@@ -78,7 +92,7 @@ binner2 <- function(input, bin.size = 10000) {
       bin.floor <- bin.ceiling
     }
   }
-  timeSeries::colnames(klaus) <- c("CHROM", "binFloor", "binCeiling", "binMiddle",
+  colnames(klaus) <- c("CHROM", "binFloor", "binCeiling", "binMiddle",
                        "deltaSNP", "smoothedDeltaSNP", "qvalue",
                        "mut_perBin", "Bin_size", "Significance")
 

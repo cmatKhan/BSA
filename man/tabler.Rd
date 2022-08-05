@@ -9,13 +9,19 @@ tabler(VCF, i = 1, minDepth = 5, cutoff = 0.75, filtering = F, cutoff50 = 0.1)
 \arguments{
 \item{VCF}{PARAM_DESCRIPTION}
 
-\item{i}{PARAM_DESCRIPTION, Default: 1}
+\item{i}{integer. Samples in a vcf file start in the 10th column.
+Tabler takes the information from the (9+i)th column from the vcf.
+Default: 1}
 
-\item{minDepth}{PARAM_DESCRIPTION, Default: 5}
+\item{minDepth}{Numeric. The minimal depth required at each
+position to call a different allele. Default: 5}
 
-\item{cutoff}{PARAM_DESCRIPTION, Default: 0.75}
+\item{cutoff}{Numeric. Minimum ratio of reads (as a number between 0 and 1)
+that supports either allele required to call an allele. Default: 0.75.}
 
-\item{filtering}{PARAM_DESCRIPTION, Default: F}
+\item{filtering}{Logical. If True, will fill up the column "filtGenotype".
+This is specially useful for single strains, not so much for BSA.
+The function is much faster if turned off. Default: F.}
 
 \item{cutoff50}{PARAM_DESCRIPTION, Default: 0.1}
 }

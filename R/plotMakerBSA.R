@@ -1,5 +1,6 @@
-
-#' Identifies which variants are statistically significant in x number of pools.
+#' @title plot maker BSA
+#' @description Identifies which variants are statistically significant in
+#'   x number of pools.
 #'
 #' @param depth integer. A read depth for which to replicate SNP-index calls.
 #' @param altFreq1 numeric. The alternate allele frequency for bulk A.
@@ -7,8 +8,9 @@
 #' @param replicates integer. The number of bootstrap replications.
 #' @param filter numeric. an optional minimum SNP-index filter
 #'
-#' @return Returns a vector of length replicates delta SNP-indeces
+#' @return Returns a vector of length replicates delta SNP-indices
 #'
+#' @export
 plotMakerBSA=function(datum, xplot=datum$binMiddle/1000, yplot=datum$All_pools){
   ggplot(data=datum,aes(x=xplot, y=yplot))+
     geom_pointrange(data=temp,

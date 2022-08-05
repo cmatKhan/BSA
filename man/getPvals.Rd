@@ -12,19 +12,31 @@ getPvals(
 )
 }
 \arguments{
-\item{Gprime}{PARAM_DESCRIPTION}
+\item{Gprime}{a vector of G prime values (tricube weighted G statistics)}
 
-\item{deltaSNP}{PARAM_DESCRIPTION, Default: NULL}
+\item{deltaSNP}{a vector of delta SNP values for use for QTL region filtering}
 
-\item{outlierFilter}{PARAM_DESCRIPTION, Default: c("deltaSNP", "Hampel")}
+\item{outlierFilter}{one of either "deltaSNP" or "Hampel". Method for
+filtering outlier (ie QTL) regions for p-value estimation}
 
-\item{filterThreshold}{PARAM_DESCRIPTION}
+\item{filterThreshold}{The absolute delta SNP index to use to filter out putative QTL}
 }
 \value{
 OUTPUT_DESCRIPTION
 }
 \description{
-FUNCTION_DESCRIPTION
+The function is used by \code{\link{runGprimeAnalysis}} to
+estimate p-values for the weighted G' statistic based on the
+non-parametric estimation method described in Magwene et al. 2011.
+Breifly, using the natural log of Gprime a median absolute deviation (MAD)
+is calculated. The Gprime set is trimmed to exclude outlier regions
+(i.e. QTL) based on Hampel's rule. An alternate method for filtering out
+QTL is proposed using absolute delta SNP indeces greater than a set
+threshold to filter out potential QTL. An estimation of the mode of the
+trimmed set is calculated using the \code{\link[modeest]{mlv}} function
+from the package modeest. Finally, the mean and variance of the set are
+estimated using the median and mode and p-values are estimated from a
+log normal distribution.
 }
 \details{
 DETAILS

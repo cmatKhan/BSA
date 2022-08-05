@@ -88,7 +88,7 @@ for (i in pools) {
 
 ```
 
-# combine replicates?
+# combine replicates
 
 ```{r}
 
@@ -100,10 +100,16 @@ pools <- paste0("P", 1:5)
 
 for (i in pools) {
   # Inoculum
-  meta <- mySamples[[grep(pattern = i, x = Inoculum, value = T)[1]]][, 1:4] # this is the basis for the table; the four first columns of mySamples.
-  meta$RealDepth <- rowSums(sapply(grep(pattern = i, x = Inoculum, value = T), FUN = function(x) {
-    cbind(mySamples[[x]][, 8])
-  }))
+  # # this is the basis for the table; the four first columns of mySamples.
+  meta <- mySamples[[grep(pattern = i, x = Inoculum, value = T)[1]]][, 1:4] 
+  meta$RealDepth <- rowSums(
+    sapply(grep(pattern = i, 
+                x = Inoculum, 
+                value = T), 
+           FUN = function(x) { 
+             cbind(mySamples[[x]][, 8])})
+    )
+  
   meta$Reference <- rowSums(sapply(grep(pattern = i, x = Inoculum, value = T), FUN = function(x) {
     cbind(mySamples[[x]][, 9])
   }))

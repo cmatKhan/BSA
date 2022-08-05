@@ -1,5 +1,11 @@
+# TODO complete documentation
+
 #' @title a percenter function
-#' @description FUNCTION_DESCRIPTION
+#' @description this function will make a new table with the differences
+#'   in percentages (between YPD - inoculum, and Lung - inoculum)
+#'   in a sample using the tabler output list as input. The sampleColumn
+#'   should be the column number that shows the sample's inoculum.
+
 #'
 #' @param input PARAM_DESCRIPTION, Default: allSamples
 #' @param parameter PARAM_DESCRIPTION, Default: 'Reference'

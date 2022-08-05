@@ -1,3 +1,4 @@
+#TODO complete documentation
 
 #' @title plot some stuff
 #' @description This function will plot the enrichment of each SNP.

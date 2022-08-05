@@ -1,11 +1,19 @@
+# TODO complete documentation
+
 #' @title the tabler
 #' @description FUNCTION_DESCRIPTION
 #'
 #' @param VCF PARAM_DESCRIPTION
-#' @param i PARAM_DESCRIPTION, Default: 1
-#' @param minDepth PARAM_DESCRIPTION, Default: 5
-#' @param cutoff PARAM_DESCRIPTION, Default: 0.75
-#' @param filtering PARAM_DESCRIPTION, Default: F
+#' @param i integer. Samples in a vcf file start in the 10th column.
+#'   Tabler takes the information from the (9+i)th column from the vcf.
+#'   Default: 1
+#' @param minDepth Numeric. The minimal depth required at each
+#'   position to call a different allele. Default: 5
+#' @param cutoff Numeric. Minimum ratio of reads (as a number between 0 and 1)
+#'   that supports either allele required to call an allele. Default: 0.75.
+#' @param filtering Logical. If True, will fill up the column "filtGenotype".
+#'   This is specially useful for single strains, not so much for BSA.
+#'   The function is much faster if turned off. Default: F.
 #' @param cutoff50 PARAM_DESCRIPTION, Default: 0.1
 #'
 #' @return OUTPUT_DESCRIPTION
@@ -15,7 +23,6 @@
 #' @export
 #'
 #' @importFrom stringr str_split_fixed
-#' @importFrom timeSeries colnames apply
 #' @importFrom dplyr mutate
 tabler <- function(VCF, i = 1, minDepth = 5, cutoff = 0.75,
                    filtering = F, cutoff50 = 0.1) {
@@ -23,7 +30,7 @@ tabler <- function(VCF, i = 1, minDepth = 5, cutoff = 0.75,
   # This splits the FORMAT itens from the vcf into columns.
   c <- (stringr::str_split_fixed(VCF[, 9 + i], ":", n = 8))
 
-  timeSeries::colnames(c) <- c("Genotype_GT", "Depth_DP", "AD", "Reference_RO", "QR", "Alternative_AO", "QA", "GL")
+  colnames(c) <- c("Genotype_GT", "Depth_DP", "AD", "Reference_RO", "QR", "Alternative_AO", "QA", "GL")
 
   # The two lines bellow convert any "." in the object
   # c(columns 3, 8 and the rest, respectively) to "0,0".
@@ -41,7 +48,7 @@ tabler <- function(VCF, i = 1, minDepth = 5, cutoff = 0.75,
       x <- x
     }
   })
-  c <- timeSeries::apply(c, c(1, 2), FUN = function(x) {
+  c <- apply(c, c(1, 2), FUN = function(x) {
     if (x == ".") {
       x <- 0
     } else {
@@ -57,8 +64,8 @@ tabler <- function(VCF, i = 1, minDepth = 5, cutoff = 0.75,
   # Convert c and d to numeric
   # Columns AD and GL will be converted to NA, generating errors.
   # But that's ok, we've got what we needed from them.
-  c <- timeSeries::apply(c, c(1, 2), as.numeric)
-  d <- timeSeries::apply(d, c(1, 2), as.numeric)
+  c <- apply(c, c(1, 2), as.numeric)
+  d <- apply(d, c(1, 2), as.numeric)
 
   # This gets the possible alternative alleles.
   # The split only happens when we have a second alternative allele.

@@ -1,13 +1,26 @@
+#TODO better title, move some desc into details?
+
 #' @title calc tricube stat
-#' @description FUNCTION_DESCRIPTION
+#' @description :ocal regression (wrapper for \code{\link[locfit]{locfit}})
+#'   to predict a tricube smoothed version of the statistic supplied for each
+#'   SNP. This works as a weighted average across neighboring SNPs that
+#'   accounts for Linkage disequilibrium (LD) while minizing noise attributed
+#'   to SNP calling errors. Values for neighboring SNPs within the window
+#'   are weighted by physical distance from the focal SNP.
+#' @param POS A vector of genomic positions for each SNP
+#' @param Stat A vector of values for a given statistic for each SNP
+#' @param WinSize the window size (in base pairs) bracketing each SNP for which
+#'   to calculate the statitics. Magwene et. al recommend a window size of ~25
+#'   cM, but also recommend optionally trying several window sizes to test if
+#'   peaks are over- or undersmoothed. Default: 2e+06
 #'
-#' @param POS PARAM_DESCRIPTION
-#' @param Stat PARAM_DESCRIPTION
-#' @param windowSize PARAM_DESCRIPTION, Default: 2e+06
-#'
-#' @return OUTPUT_DESCRIPTION
+#' @return Returns a vector of the weighted statistic caluculted with a
+#'   tricube smoothing kernel
 #'
 #' @details DETAILS
+#' @examples df_filt_4mb$Gprime <- tricubeStat(POS, Stat = GStat, WinSize = 4e6)
+#' @seealso \code{\link{getG}} for G statistic calculation
+#' @seealso \code{\link[locfit]{locfit}} for local regression
 #'
 #' @export
 #'

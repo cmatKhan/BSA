@@ -15,7 +15,7 @@ binner3(input, bin.size = 10000)
 OUTPUT_DESCRIPTION
 }
 \description{
-see binner and binner2
+how diff than binner?
 }
 \details{
 DETAILS

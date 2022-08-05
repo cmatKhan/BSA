@@ -7,18 +7,26 @@
 picker2(SNPset, lowBulk, highBulk)
 }
 \arguments{
-\item{SNPset}{PARAM_DESCRIPTION}
+\item{SNPset}{List. Each eelement of the list is a table showing data
+from one sample, the table is set as the output of the tabler function.}
 
-\item{lowBulk}{PARAM_DESCRIPTION}
+\item{lowBulk}{String. The name of the sample (and of the element in
+the SNPset list) corresponding to the Low Bulk.}
 
-\item{highBulk}{PARAM_DESCRIPTION}
+\item{highBulk}{The name of the sample (and of the element in
+the SNPset list) corresponding to the High Bulk.}
 }
 \value{
-OUTPUT_DESCRIPTION
+a data.frame with the format that can be understood by QTLseq.
 }
 \description{
-FUNCTION_DESCRIPTION
+Function to set comparisons between two samples and output
+the table in a way that the QTLseq package can use. Uses two element of
+a list to create a table that can be used by the package QTLseq.
 }
 \details{
-DETAILS
+This will be in the format used
+by QTLseq package. Picker2 has some adaptations from picker 1 for
+the tabler function in awk. RealDepth instead of realDepth,
+and no Alt2 allele.
 }

@@ -1,3 +1,5 @@
+# TODO complete documetnation of params, add return description
+
 #' @title Analyze stuff
 #'
 #' @description Now that we have a list with all comparisons for replicates

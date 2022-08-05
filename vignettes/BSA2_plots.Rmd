@@ -34,6 +34,13 @@ library(here)
 
 ```
 
+# Bin information
+
+rather than having a table per variant, table per bin.
+
+rows are bins, columns are columns are found in 
+`binner2` at the end
+
 ```{r}
 ### PLOTS
 
@@ -42,23 +49,33 @@ Pools <- list()
 allPools <- list()
 
 ptm <- proc.time()
-# detectCores()-1 #Use all cores but one, so the computer can do other things while it runs
 no_cores <- detectCores()-1 # length(names(pools_filteredBSA)) 
 cl <- makeCluster(no_cores)
-clusterExport(cl, c("pools_filteredBSA", "allPoolsInOne_filteredBSA", "binner2", "Pools", "allPools", "chosenSize"))
+
+# export data, functions and variables to cluster
+clusterExport(cl, c("pools_filteredBSA",
+                    "binner2", 
+                    "Pools", 
+                    "allPools", 
+                    "chosenSize"))
+
 # Calling the binner2 in parallel
 Pools <- parLapply(
   cl, names(pools_filteredBSA),
   function(x) {
-    binner2(pools_filteredBSA[[grep(x, names(pools_filteredBSA))]], bin.size = chosenSize)
+    # make sure this is documented
+    binner2(pools_filteredBSA[[
+      grep(x, 
+           names(pools_filteredBSA))]], 
+      bin.size = chosenSize)
   }
 )
-# allPools=parLapply(cl,names(allPoolsInOne_filteredBSA),
-#                  function(x){binner2(allPoolsInOne_filteredBSA[[grep(x, names(allPoolsInOne_filteredBSA))]], bin.size = chosenSize)})
 stopCluster(cl) # Closing the parallel cluster
 proc.time() - ptm
 
 ```
+
+
 
 ```{r}
 for (i in names(allPoolsInOne_filteredBSA)) {

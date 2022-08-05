@@ -18,7 +18,6 @@
 #'
 #' @importFrom dplyr group_by mutate left_join
 #' @importFrom QTLseqr countSNPs_cpp simulateConfInt
-#' @importFrom timeSeries as.data.frame
 runQTLseqAnalysis <- function(SNPset, windowSize = 1e6,
                               popStruc = "F2",
                               bulkSize,
@@ -89,6 +88,6 @@ runQTLseqAnalysis <- function(SNPset, windowSize = 1e6,
                      # by = c("tricubeDP" = "depth")
     )
 
-  timeSeries::as.data.frame(SNPset)
+  as.data.frame(SNPset)
 
 }

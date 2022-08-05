@@ -14,8 +14,6 @@
 #' @details DETAILS
 #'
 #' @export
-#'
-#' @importFrom timeSeries quantile as.data.frame t
 simulateConfInt <-
   function(SNPset, popStruc = "F2",
            bulkSize,
@@ -65,7 +63,7 @@ simulateConfInt <-
     CI <- sapply(
       X = depth,
       FUN = function(x) {
-        timeSeries::quantile(
+        quantile(
           x = BSA::simulateSNPindex(
             depth = x,
             altFreq1 = SNPset$SNPindex.LOW, # I adapted this. Instead of sampling the tmp_freq, we are using the SNP index from the inoculum to calculate this.
@@ -80,10 +78,10 @@ simulateConfInt <-
       }
     )
 
-    CI <- timeSeries::as.data.frame(CI)
+    CI <- as.data.frame(CI)
 
     if (length(CI) > 1) {
-      CI <- data.frame(timeSeries::t(CI))
+      CI <- data.frame(t(CI))
     }
 
     names(CI) <- paste0("CI_", 100 - (intervals * 200))

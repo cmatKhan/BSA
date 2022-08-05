@@ -9,7 +9,8 @@ binner(input, bin.size = 10000)
 \arguments{
 \item{input}{PARAM_DESCRIPTION}
 
-\item{bin.size}{PARAM_DESCRIPTION, Default: 10000}
+\item{bin.size}{The size of the window to be used in the smoothing.
+Default: 10000}
 }
 \value{
 OUTPUT_DESCRIPTION

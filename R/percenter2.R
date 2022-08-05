@@ -11,7 +11,6 @@
 #'
 #' @export
 #'
-#' @importFrom timeSeries colnames
 #' @importFrom stringr str_split_fixed
 #' @importFrom generics as.factor
 percenter2 <- function(input, parameter = "Reference", sampleColumn = 1) {
@@ -35,7 +34,7 @@ percenter2 <- function(input, parameter = "Reference", sampleColumn = 1) {
     reg$YPD <- tester2$Alt1_percentage - tester1$Alt1_percentage
   }
 
-  sampleName <- timeSeries::colnames(tab)
+  sampleName <- colnames(tab)
   amp <- stringr::str_split_fixed(sampleName, ".I", n = 2)[9 + v]
 
   reg$replicate <- rep(amp, nrow(reg))

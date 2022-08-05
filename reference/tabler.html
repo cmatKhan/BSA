@@ -69,19 +69,25 @@
 
 
 <dt>i</dt>
-<dd><p>PARAM_DESCRIPTION, Default: 1</p></dd>
+<dd><p>integer. Samples in a vcf file start in the 10th column.
+Tabler takes the information from the (9+i)th column from the vcf.
+Default: 1</p></dd>
 
 
 <dt>minDepth</dt>
-<dd><p>PARAM_DESCRIPTION, Default: 5</p></dd>
+<dd><p>Numeric. The minimal depth required at each
+position to call a different allele. Default: 5</p></dd>
 
 
 <dt>cutoff</dt>
-<dd><p>PARAM_DESCRIPTION, Default: 0.75</p></dd>
+<dd><p>Numeric. Minimum ratio of reads (as a number between 0 and 1)
+that supports either allele required to call an allele. Default: 0.75.</p></dd>
 
 
 <dt>filtering</dt>
-<dd><p>PARAM_DESCRIPTION, Default: F</p></dd>
+<dd><p>Logical. If True, will fill up the column "filtGenotype".
+This is specially useful for single strains, not so much for BSA.
+The function is much faster if turned off. Default: F.</p></dd>
 
 
 <dt>cutoff50</dt>

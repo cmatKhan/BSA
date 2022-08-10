@@ -23,6 +23,8 @@ Imports:
 Remotes: 
     bmansfeld/QTLseqr
 Suggests: 
+    foreach (>= 1.5.2),
     knitr,
-    rmarkdown
+    rmarkdown,
+    tidyverse (>= 1.3.2)
 VignetteBuilder: knitr

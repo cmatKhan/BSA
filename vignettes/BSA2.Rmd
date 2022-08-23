@@ -10,7 +10,8 @@ vignette: >
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  eval = FALSE
 )
 ```
 
@@ -132,9 +133,8 @@ create a list of dataframes which represent comparisons between lowBulk and
 highBulk samples -- preparing for input to QTLseqr
 
 ```{r}
-
 replicatesBSA = foreach(
-  row = iterators::iter(sample_comparison_frame(pool_construction),by='row')
+  row = iterators::iter(sample_comparison_frame(pool_meta),by='row')
 ) %do% {
     picker2(samples_df,
             lowBulk = row[['lowBulk']],
@@ -161,6 +161,8 @@ summedPoolsBSA = df %>%
 ```
 
 # pooled BSA
+do the same thing with the picker2, but this time on the data set with 
+collapsed replicates
 
 ```{r, eval = FALSE}
 ## Making the contrasts of low and high bulk with the summed pools
@@ -221,7 +223,10 @@ for (y in c("I", "Y", "L", "B")) { # This loop goes around for each condition.
 for (i in c("Y", "L", "B")) {
   lowbulk <- "I"
   highbulk <- i
-  allPoolsInOneComparisonBSA[[i]] <- picker2(allPoolsInOneBSA, lowBulk = lowbulk, highBulk = highbulk)
+  allPoolsInOneComparisonBSA[[i]] <- 
+    picker2(allPoolsInOneBSA, 
+            lowBulk = lowbulk, 
+            highBulk = highbulk)
   print(paste("Comparisons made:", highbulk, "x", lowbulk, sep = " "))
 }
 ```

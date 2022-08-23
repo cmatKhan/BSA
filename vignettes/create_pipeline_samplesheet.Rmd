@@ -10,7 +10,8 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  eval = FALSE
 )
 ```
 
@@ -67,13 +68,16 @@ df = readRDS(system.file("bsa6_raw_meta.rds", package = "BSA")) %>%
   dplyr::rename(experiment = Experiment) %>%
   mutate(fastq_1 = file.path(FileFolder,FirstPairFileName)) %>%
   dplyr::rename(sample = `Strain Alias`) %>%
+  mutate(group = ifelse(str_detect(sample, "all"), "oneMouse", "sepMouse")) %>%
   mutate(fastq_2 = str_replace(fastq_1, "_R1_", "_R2_")) %>%
   mutate(cond = unlist(map(cond, relevel_cond))) %>%
-  dplyr::select(sample, pool, cond, day, replicate, experiment, 
-                runNumber, fastq_1, fastq_2)
+  dplyr::select(sample,group, pool, cond, day, replicate, experiment, 
+                runNumber, fastq_1, fastq_2) %>%
+  mutate(fastq_1 = file.path("data",basename(fastq_1)),
+         fastq_2 = file.path("data",basename(fastq_2)))
 
-#write_csv(df, "/mnt/scratch/sarek/bsa6_samplesheet.csv")
-#write_tsv(df, "/mnt/scratch/sarek/bsa6_samplesheet.tsv")
+write_csv(df, "/mnt/scratch/variant_calling_pipeline/bsa6_samplesheet.csv")
+# write_tsv(df, "/mnt/scratch/variant_calling_pipeline/bsa6_samplesheet.tsv")
 ```
 
 ```{r}

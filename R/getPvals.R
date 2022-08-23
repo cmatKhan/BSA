@@ -1,7 +1,7 @@
 #TODO move some of description to details? return documentation. better title
 
 #' @title get g prime pvals
-#' @description The function is used by \code{\link{runGprimeAnalysis}} to
+#' @description The function is used by \code{\link{runGprimeAnalysis_local}} to
 #' estimate p-values for the weighted G' statistic based on the
 #' non-parametric estimation method described in Magwene et al. 2011.
 #' Breifly, using the natural log of Gprime a median absolute deviation (MAD)
@@ -28,7 +28,7 @@
 #'
 #' @importFrom modeest mlv
 #' @importFrom stats plnorm
-getPvals <-
+getPvals_local <-
   function(Gprime,
            deltaSNP = NULL,
            outlierFilter = c("deltaSNP", "Hampel"),

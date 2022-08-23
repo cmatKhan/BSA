@@ -2,19 +2,28 @@
 % Please edit documentation in R/pickers.R
 \name{picker2}
 \alias{picker2}
-\title{pick something}
+\title{Transform VCF Table for QTLseqR}
 \usage{
-picker2(SNPset, lowBulk, highBulk)
+picker2(
+  samples_with_meta_df,
+  low_bulk_sample,
+  high_bulk_sample,
+  sample_col = "sample",
+  bulk_col = "bulk"
+)
 }
 \arguments{
-\item{SNPset}{List. Each eelement of the list is a table showing data
-from one sample, the table is set as the output of the tabler function.}
+\item{samples_with_meta_df}{A dataframe representing samples
+\code{\link[BSA]{vcf_to_qtlseqr}} joined with the sample metadata}
 
-\item{lowBulk}{String. The name of the sample (and of the element in
-the SNPset list) corresponding to the Low Bulk.}
+\item{low_bulk_sample}{String. The name of the sample (and of the element in
+the vcf_df list) corresponding to the Low Bulk.}
 
-\item{highBulk}{The name of the sample (and of the element in
-the SNPset list) corresponding to the High Bulk.}
+\item{high_bulk_sample}{The name of the sample (and of the element in
+the vcf_df list) corresponding to the High Bulk.}
+
+\item{sample_col}{name of the column with the sample names. Must contain
+the low_bulk_sample and high_bulk_sample. Default 'sample'.}
 }
 \value{
 a data.frame with the format that can be understood by QTLseq.

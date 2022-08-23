@@ -24,7 +24,7 @@ quantile(sum of depth in both bulks, na.rm = T, probs = 0.95)), Default: 0.1}
 
 \item{bulkSize}{PARAM_DESCRIPTION, Default: 20}
 
-\item{outlierFilt}{PARAM_DESCRIPTION, Default: 'deltaSNP'}
+\item{outlierFilt}{see \code{\link{QTLseqR::runGprimeAnalysis}}, Default: 'deltaSNP'}
 
 \item{filter_chr_list}{PARAM_DESCRIPTION, Default: NULL}
 

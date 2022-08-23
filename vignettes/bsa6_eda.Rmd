@@ -1,0 +1,143 @@
+---
+title: "bsa6_eda"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{bsa6_eda}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+```{r setup}
+library(BSA)
+library(tidyverse)
+library(here)
+```
+
+```{r}
+input_paths = list(
+  bsa6_vcf = system.file("BSA6.IGV.vcf.gz", package="BSA"),
+  bsa6_meta = system.file("bsa6_samplesheet.rds", package="BSA")
+)
+
+meta_df = readRDS(input_paths$bsa6_meta)
+
+tmp_dir = tempdir()
+samples_df = vcf_to_qtlseqr_table(input_paths$bsa6_vcf, tmp_dir)
+```
+
+ 1,633,607
+
+```{r}
+samples_df_with_meta = samples_df %>% 
+  left_join(meta_df)
+
+```
+
+# Filt Genotype Alternative, VCF calls Reference
+
+Consider increasing depth filter?
+
+```{r}
+summary(filter(samples_df, Filt_Genotype == "Alternative", genotype != 1) %>% 
+          select(sample, Depth, RealDepth, genotype))
+```
+
+
+```{r}
+filter(samples_df, Filt_Genotype == "Alternative", genotype != 1) %>% 
+  ggplot(aes(sample, RealDepth)) + 
+  geom_boxplot() +
+  ggtitle("Filt Genotype, VCF genotype mismatch. RealDepth Distributions")
+```
+
+# RealDepth plot
+These are remarkably similar. They aren't exactly the same, but they are 
+very close.
+
+```{r}
+x = samples_df %>% filter(sample == "P2I") %>% pull(RealDepth)
+y = samples_df %>% filter(sample == "Pall15L3") %>% pull(RealDepth)
+
+print(summary(y))
+
+print(summary(x))
+```
+
+Just to confirm, I also took these two samples and compared at the same loci. 
+They are also not the same at these loci, but are remarkably similar.
+
+```{r}
+samples_df %>% 
+  filter(sample %in% c("P2I", "Pall15L3")) %>% 
+  select(sample, CHR, POS, RealDepth) %>% 
+  pivot_wider(names_from = sample, values_from = RealDepth) %>%
+  head(20)
+```
+
+Conclusion: Daniel is the world's most consistent scientist.
+
+```{r}
+samples_df_with_meta %>%
+  filter(!is.na(group)) %>%
+ggplot(aes( sample, log2(Depth))) + 
+    geom_violin(aes(fill=factor(cond))) + 
+    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+    facet_grid(group~day,scales = "free_x")
+
+```
+
+# Using VCFtools to compare the "one mouse" and "sep mouse" samples
+
+```{raw}
+Parameters as interpreted:
+	--gzvcf group_sepMouse_sorted_snpEff.ann.vcf.gz
+	--gzdiff group_oneMouse_sorted_snpEff.ann.vcf.gz
+	--diff-site-discordance
+
+Using zlib version: 1.2.11
+After filtering, kept 20 out of 20 Individuals
+Using zlib version: 1.2.11
+Outputting Discordance By Site...
+Non-matching REF. Skipping all such sites.
+Found 17262 sites common to both files.
+Found 3072 sites only in main file.
+Found 18181 sites only in second file.
+
+
+```
+
+see here for a number of graphs that could be reproduced
+https://github.com/pwwang/vcfstats
+
+pca
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

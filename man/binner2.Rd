@@ -2,7 +2,7 @@
 % Please edit documentation in R/binner2.R
 \name{binner2}
 \alias{binner2}
-\title{Binner the second}
+\title{binner2 -- another binner}
 \usage{
 binner2(input, bin.size = 10000)
 }
@@ -15,8 +15,6 @@ binner2(input, bin.size = 10000)
 OUTPUT_DESCRIPTION
 }
 \description{
-how diff than binner?
-
 This is a function to make a new table with different
 bin sizes and the average of ∆\% observed in the positions inside the bin.
 You can play with the bin size, and it uses the output of percenter

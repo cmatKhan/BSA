@@ -1,0 +1,392 @@
+---
+title: "bsa6_eda"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{bsa6_eda}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+# reduction in code from 8129 characters to 4860 characters. That includes 
+# comments, spaces, headings, etc
+
+```{r setup}
+library(BSA)
+library(tidyverse)
+library(foreach)
+library(here)
+library(BSgenome.CneoformansVarGrubiiKN99.NCBI.ASM221672v1)
+
+kn99_genome = BSgenome.CneoformansVarGrubiiKN99.NCBI.ASM221672v1
+```
+
+# Read in data from VCF and parse into dataframe
+
+```{r}
+chr_map = tibble(seqnames = seqnames(kn99_genome), 
+                 CHR=c(seq(1:14), "M"))
+
+input_paths = list(
+  bsa6_vcf = system.file("BSA6.IGV.vcf.gz", package="BSA"),
+  bsa6_meta = system.file("bsa6_samplesheet.rds", package="BSA")
+)
+
+meta_df = readRDS(input_paths$bsa6_meta)
+
+tmp_dir = tempdir()
+samples_df = vcf_to_qtlseqr_table(input_paths$bsa6_vcf, "~/Desktop")  %>% 
+  left_join(chr_map) %>% 
+  select(c("seqnames", colnames(samples_df)[2:length(samples_df)])) %>%
+  dplyr::rename(CHR=seqnames) %>% 
+  filter(!is.na(CHR)) %>%
+  arrange(sample, CHR, POS)
+```
+
+```{r}
+unique(samples_df$CHR)
+```
+
+
+# Join the VCF data with the sample metadata
+
+Add column `bulk`. This refers to the structure of a BSA experiment. In this 
+application, "low bulk" are the inocolum samples while high bulk are all other 
+samples.
+
+```{r}
+samples_df_with_meta = samples_df %>% 
+  left_join(meta_df) %>%
+  # note this!
+  mutate(bulk = ifelse(cond == "inoculum", "low", "high"))
+```
+
+# Split the data into two groups
+
+`oneMouse` are the samples passed through a single mouse. `sepMouse` are those 
+that are passed through 5 separate mice.
+
+```{r}
+group_split = samples_df_with_meta %>%
+  # NOTE! I didn't have the WT in my samplesheet...
+  filter(!is.na(group)) %>%
+  group_by(group) %>%
+  group_split()
+
+names(group_split) = unlist(map(group_split, ~unique(pull(.,group))))
+
+meta_df_split = meta_df %>%
+  group_by(group) %>%
+  group_split()
+
+names(meta_df_split) = unlist(map(meta_df_split, ~unique(pull(.,group))))
+```
+
+# BSA on the replicates
+
+```{r}
+# this function will run the `picker2` function on the oneMouse and sepMouse 
+# groups
+replicate_bsa_by_group = function(group_name,
+                                  metadata_split, 
+                                  sample_df, 
+                                  grouping_var,
+                                  base_cond_in_each_group){
+
+  experiment_crosses =
+    sample_comparison_frame(metadata_split,
+                            grouping_var = grouping_var,
+                            base_cond_in_each_group = base_cond_in_each_group)
+
+  out = foreach(
+    row = iterators::iter(experiment_crosses, by='row'),
+    .inorder = TRUE
+  ) %do% {
+    picker2(sample_df, 
+            low_bulk_sample = row[['lowBulk']], 
+            high_bulk_sample = row[['highBulk']])
+  }
+  names(out) = experiment_crosses$highBulk
+  
+  out
+}
+```
+
+# Create QTLseqR input using picker2 on all samples
+
+```{R}
+replicatesBSA = map(names(group_split),
+                    ~replicate_bsa_by_group(.,meta_df_split[[.]],
+                                            group_split[[.]],
+                                            grouping_var = 'pool',
+                                            base_cond_in_each_group = TRUE))
+names(replicatesBSA) = names(group_split)
+```
+
+# Collapse replicates and re-run picker2
+
+```{r}
+
+sum_over_replicates = function(df_with_meta){
+  df_with_meta %>% 
+  group_by(CHR,POS,REF_Allele,ALT1,bulk,cond,pool,day) %>% 
+  summarize(RealDepth    = sum(RealDepth),
+            Depth        = sum(Depth),
+            Reference    = sum(Reference),
+            Alternative1 = sum(Alternative1),
+            .groups = 'keep') %>% 
+  unite("sample", pool, cond, day, remove = FALSE) %>%
+  group_by(sample) %>% 
+  arrange(CHR, POS, REF_Allele, ALT1) %>%
+  ungroup()
+}
+
+summed_replicates_split = map(group_split, sum_over_replicates)
+
+summed_replicates_meta = summed_replicates_split %>%
+  map(select, sample, pool, cond, day) %>% 
+  map(distinct, sample, .keep_all = TRUE)
+
+summedReplicatesBSA = map(names(summed_replicates_split),
+                    ~replicate_bsa_by_group(.,summed_replicates_meta[[.]],
+                                            summed_replicates_split[[.]],
+                                            grouping_var = 'pool',
+                                            base_cond_in_each_group = TRUE))
+
+names(summedReplicatesBSA) = names(summed_replicates_split)
+
+```
+
+# Collapse conditions and re-run picker2
+This collapsed both pool and replicate
+
+```{r}
+
+sum_over_conditions = function(df_with_meta){
+  df_with_meta %>% 
+  group_by(CHR,POS,REF_Allele,ALT1,bulk,cond, day) %>% 
+  summarize(RealDepth    = sum(RealDepth),
+            Depth        = sum(Depth),
+            Reference    = sum(Reference),
+            Alternative1 = sum(Alternative1),
+            .groups = 'keep') %>% 
+  unite("sample", cond, day, remove = FALSE) %>%
+  group_by(sample) %>% 
+  arrange(CHR, POS, REF_Allele, ALT1) %>%
+  ungroup()
+}
+
+summed_conditions_split = map(group_split, sum_over_conditions)
+
+summed_conditions_meta = summed_conditions_split %>%
+  map(select, sample, cond, day, bulk) %>% 
+  map(distinct, sample, .keep_all = TRUE)
+
+allPoolsInOneBSA = map(names(summed_conditions_split),
+                       ~replicate_bsa_by_group(.,summed_conditions_meta[[.]],
+                                            summed_conditions_split[[.]],
+                                            grouping_var = 'day',
+                                            base_cond_in_each_group = FALSE))
+
+names(allPoolsInOneBSA) = names(summed_conditions_split)
+```
+
+```{r}
+filter_bsa_set = function(bsa_set){
+  out = foreach(
+    df = bsa_set,
+    .inorder = TRUE
+    ) %do% {
+      analyzer(df[!is.nan(df$deltaSNP),], 
+               minDepthPercentile = 0.1, 
+               maxDepthPercentile = 0.995, 
+               outlierFilt = "Hampel",
+               filter_chr_list = c("CP022335.1", "G418", "NAT"))
+    }
+  names(out) = names(bsa_set)
+  out
+}
+
+filtered_summedReplicatesBSA = map(summedReplicatesBSA, filter_bsa_set)
+
+filtered_allPoolsInOneBSA = map(allPoolsInOneBSA, filter_bsa_set)
+
+```
+
+# Below is the plotting
+
+```{r}
+### PLOTS
+
+chosenSize <- 5000
+# Pools <- list()
+# allPools <- list()
+# 
+# ptm <- proc.time()
+# no_cores <- detectCores()-1 # length(names(pools_filteredBSA)) 
+# cl <- makeCluster(no_cores)
+# 
+# # export data, functions and variables to cluster
+# clusterExport(cl, c("filtered_summedReplicatesBSA",
+#                     "binner2", 
+#                     "Pools", 
+#                     "allPools", 
+#                     "chosenSize"))
+# 
+# # Calling the binner2 in parallel
+# Pools <- parLapply(cl, names(pools_filteredBSA),
+#   function(x) {
+#     # make sure this is documented
+#     binner2(pools_filteredBSA[[grep(x, names(pools_filteredBSA))]], bin.size = chosenSize)
+#   }
+# )
+# stopCluster(cl) # Closing the parallel cluster
+# proc.time() - ptm
+
+bin_variants = function(variant_metrics_df, 
+                        tiled_genome_df,
+                        chr_seqlengths,
+                        chr_colname,
+                        qvalue_lower_thres = 0.1,
+                        qvalue_upper_thres = 0.5){
+  
+  if(!chr_colname %in% colnames(variant_metrics_df)){
+    stop(sprintf("%s not in variant_metrics_df colnames", chr_colname))
+  } else if(!chr_colname %in% colnames(tiled_genome_df)){
+    stop(sprintf("%s not in tiled_genome_df colnames", chr_colname))
+  }
+  
+  final_col_order = c(chr_colname, 'binFloor', 'binCeiling', 
+                      'binMiddle', 'mean_deltaSNP', 'smoothedDeltaSNP',
+                      'mean_qvalue', 'mut_perBin', 'bin_size', 'singificance')
+  
+  variant_metrics_chr_split = variant_metrics_df %>%
+  group_by(!!rlang::sym(chr_colname)) %>%
+    group_split()
+  
+  names(variant_metrics_chr_split) = unlist(
+    map(variant_metrics_chr_split, ~unique(pull(.,chr_colname)))
+  )
+  
+  tiled_genome_chr_split = tiled_genome_df %>%
+    group_by(!!rlang::sym(chr_colname)) %>%
+    group_split()
+  
+  names(tiled_genome_chr_split) = unlist(
+    map(tiled_genome_chr_split, ~unique(pull(.,chr_colname)))
+  )
+  
+  out = map(names(variant_metrics_chr_split), 
+        ~tile_metrics(variant_metrics_chr_split[[.]], 
+                      tiled_genome_chr_split[[.]],
+                      chr_seqlengths[[.]])) %>%
+    do.call('rbind', .) %>%
+    group_by(!!rlang::sym(chr_colname), tile) %>%
+    summarize(mean_deltaSNP = mean(deltaSNP, na.rm=TRUE),
+              smoothedDeltaSNP   = mean(tricubeDeltaSNP, na.rm = TRUE),
+              mean_qvalue        = mean(qvalue, na.rm = TRUE)
+              qval_below_thres_n = sum(qvalue < qvalue_lower_thres),
+              qval_above_thres_n = sum(qvalue >= qvalue_upper_thres),
+              mut_perBin         = n(),
+              .groups = 'keep') %>%
+    mutate(significance = qval_below_thres_n / qval_above_thres_n,
+           tile = str_remove_all(tile, '\\[|\\]|\\(|\\)')) %>%
+    separate(tile, c('binFloor', 'binCeiling'), sep=",") %>%
+    mutate(binFloor = as.integer(binFloor),
+           binCeiling = as.integer(binCeiling)) 
+  
+  if(length(setdiff(final_col_order, colnames(out))) > 0){
+    stop(paste0(
+          sprintf("The following columns are expected in the output: %s.\n",
+                  paste(final_col_order, collapse = ",")), 
+          sprintf("But the output columns do not possess one or more: %s",
+                  paste(colnames(out), collapse=","))) )
+  } else{
+    out %>%
+      select(all_of(final_col_order))
+  }
+
+    
+  
+}
+
+tile_metrics = function(metrics_df, 
+                        genome_tile_df, chr_seqlength,
+                        cut_col = "POS", 
+                        left_inclusive = TRUE, 
+                        right_inclusive = FALSE){
+  
+  metrics_df %>% 
+    mutate(tile = 
+             cut(!!rlang::sym(cut_col), 
+                 c(genome_tile_df$start, chr_seqlength + 1), 
+                 include.lowest = left_inclusive, 
+                 right = right_inclusive))
+
+}
+
+tiled_genome_df = tiled_genome_df %>%
+  dplyr::rename(CHROM=seqnames) 
+  
+
+x = bin_variants(filtered_allPoolsInOneBSA$oneMouse$brain_15, 
+                 tiled_genome_df,
+                 seqlengths(kn99_genome),
+                 "CHROM")
+
+x  %>%
+    summarize(deltaSNP = mean(deltaSNP, na.rm=TRUE),
+              tricubeDeltaSNP = mean(tricubeDeltaSNP, na.rm = TRUE)) %>%
+  mutate(qval_below_thres_n = count(qvalue < .1))
+
+%>%
+    mutate(significance = qval_below_thres_n / qval_above_thres_n)
+
+binner2_by_group = function(bsa_set){
+  foreach(
+    df = bsa_set,
+    .inorder = TRUE
+  ) %do% {
+    binner2(df, bin.size = chosenSize)
+  }
+}
+
+x = binner2(filtered_allPoolsInOneBSA$sepMouse$lung_8)
+
+# binned_filtered_summedReplicatesBSA = map(summedReplicatesBSA, binner2_by_group)
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

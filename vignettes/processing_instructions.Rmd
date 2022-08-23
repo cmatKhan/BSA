@@ -295,6 +295,7 @@ rm freebayes/${name}.vcf
 
 # Starting the sorting.
 sed -e "77s/#//" freebayes/$name.clean.vcf > freebayes/$name.clean.vcf.test
+
 Rscript /scratch/mblab/daniel.agustinho/tools/vcfSorter.R freebayes/$name.clean.vcf.test
 
 grep '^##' freebayes/$name.clean.vcf  > freebayes/$name.sorted.vcf # ${file/clean.vcf/sorted.vcf}
@@ -307,8 +308,119 @@ rm freebayes/$name.clean.vcf.test freebayes/$name.clean.vcf freebayes/$name.sort
 
 /scratch/mblab/daniel.agustinho/tools/VCF_tabler.sh freebayes/$name.IGV.vcf freebayes/VCFtables
 rm freebayes/VCFtables/.txt
+
 /scratch/mblab/daniel.agustinho/tools/strainAnalyzer.sh
+
 ./popAnalyzer.sh
+
+```
+
+## VCF sorter
+
+```{r,eval = FALSE}
+#!/usr/bin/env Rscript
+args = commandArgs(trailingOnly=TRUE)
+
+#part of the VCF sorter script.
+
+tab=read.table(args[1], as.is=T, header=T)
+tab2=tab[, c(1:9, order(colnames(tab[,10:ncol(tab)]))+9)]
+write.table(tab2, file="data.vcf", quote = F, sep = "\t", row.names = F)
+```
+
+## VCF_tabler.sh
+
+```{bash}
+[chasem@login variant_calling_pipeline]$ cat /scratch/mblab/daniel.agustinho/tools/VCF_tabler.sh
+#!/bin/bash
+
+rm freebayes/VCFtables/*
+
+#THis script was made to transfer my famous tabler function from R to awk to make it faster.See my BSAtools.R to get a better idea.
+inputVCF=$1 #The input VCF file, in general, the .IGV.vcf file resulting from the VCFsorter.sh script. 
+name=$2 #The name of the folder created to host the files generated.
+
+numCols=`awk '{print NF}' $inputVCF | sort -nu | tail -n 1` #The number of columns in the VCF
+pools=$(sed '77q;d' $inputVCF | cut -f 10- -) #The name of the samples, got from line 77 of the VCF
+mkdir -p $name #Creates the folder to copy the files into.
+
+for ((i=10; i<=$numCols; i++)); #iterating across the samples, starting with the first one (column 10 from the VCF)
+do
+grep -e '^#' -v $inputVCF \
+  | awk -v var="$i" '{print $1,$2,$3,$4,$5,$6,$7,$8,$9,$var}' \
+  | awk 'BEGIN{FS=OFS=" "}{gsub(":"," ",$10)}1' - \ 
+  | awk '{print $1,$2,$4,$5,$6,$10,$11,$13+$15,$13,$15}' -  \
+  > ${name}/temp.txt
+#The grep gets everything that does not start with a hashtag.
+#First awk select just the column of the sample we want.
+#Second awk replaces the ":" in column 10 (the sample) with spaces, making new columns.
+#Third awk reorganizes the columns, getting only the ones I want, and creating the Real Depth column from the sum of reads.
+
+sed -i 's/ \./ 0/g' ${name}/temp.txt
+#This replaces the [[:space:]]periods on the columns  with space +0s (Won't apply to the QUAL column) 
+
+# These two awks create columns 12 and 13 with the percentages of 
+# Ref and Alt respectively. If Real Depth is 0, it returns "NA".
+# $8 is the RealDepth, created previously, and $9 and $10 are ref and allele 
+# depths
+awk '{if ( $8 > 0 ) {$11=$9/$8 } else { $11="NA" } print $0}' ${name}/temp.txt \
+  | awk '{if ( $8 > 0 ) {$12=$10/$8 } else { $12="NA" } print $0}' - \
+  > ${name}/tempz.txt
+
+
+POS=$((i - 9)) #This gives the position of the sample.
+
+awk '{if ( $8 < 5 ) {$13="lowDepth"} else if ( $8 >= 5 && $11 >= 0.9 ) {$13="Reference"} else if ( $8 >= 5 && $12 >= 0.9 ) {$13="Alternative"} else {$13="undefinedGenotype"} print}' ${name}/tempz.txt > ${name}/temp.$POS.txt
+#This is the filtering step, column 13 will give "lowDepth", "Reference", "Alternative" or "undefinedGenotype"
+
+fileName=$(sed '77q;d' $inputVCF | cut -f 10- - | cut -f $POS)
+#This extracts the name of the samples from the VCF (starting at column 10), and gets the name of this particular sample(last cut)
+
+echo -e "CHR POS Ref_Allele ALT1 QUAL Genotype Depth RealDepth Reference Alternative1 Ref_percentage Alt1_percentage Filt_Genotype" > ${name}/temp.x.txt #The header of the final table.
+cat ${name}/temp.x.txt ${name}/temp.$POS.txt >>${name}/${fileName}.txt
+#Concatenating the header and the table together.
+
+rm $name/temp.txt
+rm $name/tempz.txt
+rm $name/temp.$POS.txt
+rm $name/temp.x.txt
+#Cleaning the temp files.
+#echo $numCols
+echo $fileName
+#echo $i
+
+done
+
+```
+
+## strainAnalyzer
+
+```{bash}
+[chasem@login variant_calling_pipeline]$ cat /scratch/mblab/daniel.agustinho/tools/strainAnalyzer.sh
+#!/usr/bin/env bash
+
+# This script will look at a folder containing vcf tables (from VCFtabler.sh) and summarize each strain genotype per call count.
+
+echo -e "Strain\\tReferenceAlleles\\tAlternativeAlleles\\tUndefinedAlleles\\tlowDepthAlleles\\tAvg.Depth.Ref\\tAvg.Depth.Alt\\tAvg.Depth.Undef\\tAvg.Depth.LowDepth\\tAvg.Depth" > strainSummary.txt
+
+for i in freebayes/VCFtables/*.txt
+do
+prefix=${i/.txt/}
+strain=${prefix#"*freebayes/VCFtables/"}
+RefAlle=$(sed -n '1!p' $i | grep -ce "Reference" - )
+AltAlle=$(sed -n '1!p' $i| grep -ce "Alternative" - )
+undefAlle=$(sed -n '1!p' $i | grep -ce "undefinedGenotype" - )
+lowDepAlle=$(sed -n '1!p' $i | grep -ce "lowDepth" - )
+AvgDepthRef=$(sed -n '1!p' $i |grep -e "Reference" |awk '{ sum += $8; n++ } END { if (n > 0) print sum / n; }')
+AvgDepthAlt=$(sed -n '1!p' $i |grep -e "Alternative" |awk '{ sum += $8; n++ } END { if (n > 0) print sum / n; }')
+AvgDepthUndef=$(sed -n '1!p' $i |grep -e "undefinedGenotype" |awk '{ sum += $8; n++ } END { if (n > 0) print sum / n; }')
+AvgDepthLowDepth=$(sed -n '1!p' $i |grep -e "lowDepth" |awk '{ sum += $8; n++ } END { if (n > 0) print sum / n; }')
+AvgDepth=$(sed -n '1!p' $i |awk '{ sum += $8; n++ } END { if (n > 0) print sum / n; }')
+
+echo -e "$strain\\t$RefAlle\\t$AltAlle\\t$undefAlle\\t$lowDepAlle\\t$AvgDepthRef\\t$AvgDepthAlt\\t$AvgDepthUndef\\t$AvgDepthLowDepth\\t$AvgDepth" >> strainSummary.txt
+
+done
+
 
 ```
 

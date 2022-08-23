@@ -14,8 +14,7 @@
 #' @details DETAILS
 #'
 #' @export
-simulateConfInt <-
-  function(SNPset, popStruc = "F2",
+simulateConfInt_local <- function(SNPset, popStruc = "F2",
            bulkSize,
            depth = 1:100,
            replications = 10000,
@@ -64,7 +63,7 @@ simulateConfInt <-
       X = depth,
       FUN = function(x) {
         quantile(
-          x = BSA::simulateSNPindex(
+          x = simulateSNPindex_local(
             depth = x,
             altFreq1 = SNPset$SNPindex.LOW, # I adapted this. Instead of sampling the tmp_freq, we are using the SNP index from the inoculum to calculate this.
 

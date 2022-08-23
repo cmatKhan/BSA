@@ -1,4 +1,6 @@
-#
+# TODO THIS WAS USING BINNER, NOT BINNER2
+
+
 #' @title plot bin dist
 #' @description This function makes the distribution plots for the bins, using the output table of the binner()palette() function as input.
 #'
@@ -23,7 +25,7 @@ binDistPlotter <- function(inputBinTable, windowsSizes = c(5000, 10000, 20000, 5
     mut_perBin = as.numeric(), bin.size = as.numeric()
   )
   for (z in 1:length(windowsSizes)) {
-    binnerDataframe <- rbind(binnerDataframe, BSA::binner(inputBinTable, bin.size = windowsSizes[z]))
+    binnerDataframe <- rbind(binnerDataframe, binner2(inputBinTable, bin.size = windowsSizes[z]))
   }
   zeta <- melt(binnerDataframe, id.vars = colnames(binnerDataframe[, c(1:4, 7, 8)]))
   zeta_lung <- subset(zeta, variable == "lungMean")

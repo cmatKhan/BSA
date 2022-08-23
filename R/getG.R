@@ -3,7 +3,7 @@
 # appropriate pull request to QTLseqr?
 
 #' @title get G prime stat
-#' @description The function is used by \code{\link{runGprimeAnalysis}} to
+#' @description The function is used by \code{\link{runGprimeAnalysis_local}} to
 #' calculate the G statisic G is defined by the equation:
 #' \deqn{G = 2*\sum_{i=1}^{4}n_{i}*ln\frac{obs(n_i)}{exp(n_i)}}{G = 2 * \sum n_i * ln(obs(n_i)/exp(n_i))}
 #' Where for each SNP, \eqn{n_i} from i = 1 to 4 corresponds to the reference
@@ -29,7 +29,7 @@
 #'   \code{\link{tricubeStat}} for G prime calculation
 #'
 #' @export
-getG <- function(LowRef, HighRef, LowAlt, HighAlt)
+getG_local <- function(LowRef, HighRef, LowAlt, HighAlt)
 {
   exp <- c(
     (LowRef + HighRef) * (LowRef + LowAlt) / (LowRef + HighRef + LowAlt + HighAlt),

@@ -1,16 +1,19 @@
-#TODO better title. Review docs and improve
+# TODO create a class which instantiates with the sample_metadata and vcf_df,
+#   possesses a method to extract groups
 
-#' @title pick something
+#' @title Transform VCF Table for QTLseqR
 #' @description Function to set comparisons between two samples and output
 #'   the table in a way that the QTLseq package can use. Uses two element of
 #'   a list to create a table that can be used by the package QTLseq.
 #'
-#' @param SNPset  List. Each eelement of the list is a table showing data
-#'   from one sample, the table is set as the output of the tabler function.
-#' @param lowBulk String. The name of the sample (and of the element in
-#'   the SNPset list) corresponding to the Low Bulk.
-#' @param highBulk The name of the sample (and of the element in
-#'   the SNPset list) corresponding to the High Bulk.
+#' @param samples_with_meta_df A dataframe representing samples
+#'   \code{\link[BSA]{vcf_to_qtlseqr}} joined with the sample metadata
+#' @param low_bulk_sample String. The name of the sample (and of the element in
+#'   the vcf_df list) corresponding to the Low Bulk.
+#' @param high_bulk_sample The name of the sample (and of the element in
+#'   the vcf_df list) corresponding to the High Bulk.
+#' @param sample_col name of the column with the sample names. Must contain
+#'   the low_bulk_sample and high_bulk_sample. Default 'sample'.
 #'
 #' @return a data.frame with the format that can be understood by QTLseq.
 #'
@@ -22,35 +25,84 @@
 #' @export
 #'
 #' @importFrom dplyr mutate
-picker2 <- function(SNPset, lowBulk, highBulk) {
+picker2 = function(samples_with_meta_df,
+                    low_bulk_sample, high_bulk_sample,
+                    sample_col = "sample",
+                    bulk_col = "bulk") {
 
-  if (!lowBulk %in% names(SNPset) | !highBulk %in% names(SNPset)) {
+  if(length(setdiff(c(sample_col, bulk_col),
+                    colnames(samples_with_meta_df))) > 0){
+    stop(paste0(sprintf("sample_col: %s and bulk_col: %s ", sample_col, bulk_col ),
+                 "must be in the colnames of the input dataframe."))
+  }
+
+  if (!low_bulk_sample %in% samples_with_meta_df[[sample_col]] |
+      !high_bulk_sample %in% samples_with_meta_df[[sample_col]]) {
     stop(paste0("Confirm if the bulks' names are present",
          "in the SNP set (vcf file) provided."))
   }
 
-  metaTable <- data.frame(
-    CHROM = SNPset[[lowBulk]]$CHR,
-    POS = SNPset[[lowBulk]]$POS,
-    REF = SNPset[[lowBulk]]$Ref_Allele,
-    ALT = SNPset[[lowBulk]]$ALT1,
-    AD_REF.LOW = SNPset[[lowBulk]]$Reference,
-    AD_ALT.LOW = (SNPset[[lowBulk]]$Alternative1),
-    DP.LOW = SNPset[[lowBulk]]$RealDepth,
-    GQ.LOW = rep(NA, nrow(SNPset[[lowBulk]])),
-    PL.LOW = rep(NA, nrow(SNPset[[lowBulk]])),
-    SNPindex.LOW = (as.numeric(SNPset[[lowBulk]]$Alternative1)) /
-      as.numeric(SNPset[[lowBulk]]$RealDepth),
-    AD_REF.HIGH = SNPset[[highBulk]]$Reference,
-    AD_ALT.HIGH = (SNPset[[highBulk]]$Alternative1),
-    DP.HIGH = SNPset[[highBulk]]$RealDepth,
-    GQ.HIGH = rep(NA, nrow(SNPset[[highBulk]])),
-    PL.HIGH = rep(NA, nrow(SNPset[[highBulk]])),
-    SNPindex.HIGH = (as.numeric(SNPset[[highBulk]]$Alternative1)) /
-      as.numeric(SNPset[[highBulk]]$RealDepth), # AD_ALT.HIGH/DP.HIGH,
-    REF_FRQ = ((SNPset[[highBulk]]$Reference + SNPset[[lowBulk]]$Reference) /
-                 (SNPset[[highBulk]]$RealDepth + SNPset[[lowBulk]]$RealDepth))
+  # after joining, reduce the joined dataframe down to just these columns
+  select_cols = c('CHR', 'POS', 'REF_Allele', 'ALT1',
+                  'Depth', 'RealDepth', 'Reference', 'Alternative1',
+                  bulk_col)
+
+  if(length(setdiff(select_cols,
+                    colnames(samples_with_meta_df))) > 0){
+    stop(paste0("the following columns must be in the input dataframe: ",
+                paste(select_cols, collapse=",")))
+  }
+
+  # the column on which to pivot
+  names_from_col = "bulk"
+
+  # column on which to filter the low_bulk and high_bulk samples
+  sample_name_col = "sample"
+
+  # it is from these columns which the values -- entries -- of the new "wider"
+  # columns are created. If the levels of the `names_from_col` are {low, high},
+  # then the new columns will be Genotype_low, Depth_low, ..., Genotype_high,
+  # Depth_high, ...
+  # Note that another way of doing this might be to use the - operator to
+  # exclude columns from the pivot -- haven't tried this.
+  value_cols = c('Depth', 'RealDepth', 'Reference', 'Alternative1')
+  if(length(setdiff(value_cols, select_cols)) > 0){
+    stop("See picker2 code: value_cols must be a subset of select_cols")
+  }
+
+  # rename columns from old to new. Note that the index of the column in old
+  # must correspond to the index of the column in new
+  # NOTE that the `mutate` function below depends on these names -- if this
+  # is changed, then the corresponding field in `mutate` needs to be addressed
+  rename_cols = list(
+
+    old = c("CHR","REF_Allele","ALT1",
+            "Reference_low","Alternative1_low","RealDepth_low",
+            "Reference_high","Alternative1_high","RealDepth_high"),
+
+    new = c("CHROM","REF","ALT",
+            "AD_REF.LOW","AD_ALT.LOW", "DP.LOW",
+            "AD_REF.HIGH","AD_ALT.HIGH","DP.HIGH")
   )
-  metaTable <- dplyr::mutate(metaTable, deltaSNP = SNPindex.HIGH - SNPindex.LOW)
-  return(metaTable)
+
+  # transform the dataframe
+  samples_with_meta_df %>%
+    filter(!!rlang::sym(sample_name_col) %in%
+             c(low_bulk_sample, high_bulk_sample)) %>%
+    select(all_of(select_cols)) %>%
+    pivot_wider(names_from = !!rlang::sym(names_from_col),
+                values_from = all_of(value_cols)) %>%
+    rename_with(~rename_cols$new, all_of(rename_cols$old)) %>%
+    # add columns -- NOTE that these are hard coded. If rename_cols is changed,
+    # this must be changed
+    mutate(GQ.LOW             = NA,
+           PL.LOW             = NA,
+           SNPindex.LOW       = AD_ALT.LOW / DP.LOW,
+           GQ.HIGH             = NA,
+           PL.HIGH             = NA,
+           SNPindex.HIGH       = AD_ALT.HIGH / DP.HIGH,
+           REF_FRQ            = (AD_ALT.LOW + AD_REF.HIGH) / (DP.LOW + DP.HIGH),
+           deltaSNP           = SNPindex.HIGH - SNPindex.LOW
+    )
+
 }

@@ -13,7 +13,7 @@
 #'
 #' @export
 #' @importFrom stats rbinom
-simulateSNPindex <-
+simulateSNPindex_local <-
   function(depth,
            altFreq1,
            altFreq2,

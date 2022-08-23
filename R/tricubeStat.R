@@ -26,7 +26,7 @@
 #'
 #' @importFrom stats predict
 #' @importFrom locfit locfit lp
-tricubeStat <- function(POS, Stat, windowSize = 2e6)
+tricubeStat_local <- function(POS, Stat, windowSize = 2e6)
 {
   if (windowSize <= 0)
     stop("A positive smoothing window is required")

@@ -18,7 +18,7 @@
 #'
 #' @importFrom dplyr group_by mutate left_join
 #' @importFrom QTLseqr countSNPs_cpp simulateConfInt
-runQTLseqAnalysis <- function(SNPset, windowSize = 1e6,
+runQTLseqAnalysis_local <- function(SNPset, windowSize = 1e6,
                               popStruc = "F2",
                               bulkSize,
                               depth = NULL,
@@ -34,7 +34,7 @@ runQTLseqAnalysis <- function(SNPset, windowSize = 1e6,
 
   message("Calculating tricube smoothed delta SNP index...")
   SNPset <- SNPset %>%
-    dplyr::mutate(tricubeDeltaSNP = BSA::tricubeStat(POS = POS, Stat = deltaSNP, windowSize))
+    dplyr::mutate(tricubeDeltaSNP = tricubeStat_local(POS = POS, Stat = deltaSNP, windowSize))
 
   #convert intervals to quantiles
   if (all(intervals >= 1)) {
@@ -54,7 +54,7 @@ runQTLseqAnalysis <- function(SNPset, windowSize = 1e6,
   SNPset <-
     SNPset %>%
     dplyr::group_by(CHROM) %>%
-    dplyr::mutate(tricubeDP = floor(BSA::tricubeStat(POS, minDP, windowSize = windowSize)))
+    dplyr::mutate(tricubeDP = floor(tricubeStat_local(POS, minDP, windowSize = windowSize)))
 
   if (is.null(depth)) {
     message(
@@ -67,8 +67,7 @@ runQTLseqAnalysis <- function(SNPset, windowSize = 1e6,
   }
 
   #simulate confidence intervals
-  CI <-
-    QTLseqr::simulateConfInt(SNPset,
+  CI = simulateConfInt_local(SNPset,
                     popStruc = popStruc,
                     bulkSize = bulkSize,
                     depth = depth,

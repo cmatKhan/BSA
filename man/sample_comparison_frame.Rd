@@ -10,7 +10,8 @@ sample_comparison_frame(
   condition_var = "cond",
   base_comparison_condition = "inoculum",
   var1_name = "lowBulk",
-  var2_name = "highBulk"
+  var2_name = "highBulk",
+  base_cond_in_each_group = TRUE
 )
 }
 \arguments{

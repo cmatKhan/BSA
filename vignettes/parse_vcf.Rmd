@@ -1,0 +1,162 @@
+---
+title: "parse_vcf"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{parse_vcf}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+```{r setup}
+library(BSA)
+library(SeqArray)
+library(here)
+```
+
+```{r}
+# vcf_path = "/mnt/scratch/BSA6.IGV.vcf"
+gds_path = here("data/bsa6.gds")
+
+# SeqArray::seqVCF2GDS(vcf_path,out.fn = gds_path)
+
+gds = seqOpen(gds_path)
+```
+
+# create filter to exclude multi allele loci
+
+```{r}
+multi_allelic <- which(nAlleles(gds) > 2)
+```
+
+```{r}
+create_sample_df = function(gds, depth_thres, ref_freq_thres){
+  
+  # the info line from daniel's BSA6 VCF is
+  # GT:DP:AD:RO:QR:AO:QA:GL	
+  # which means that columns 12 and 13 (start counting at column 10) -- 
+  # the awk command extracted columns 1-9, which are 
+  # CHROM  POS ID      REF ALT QUAL    FILTER  INFO          FORMAT 
+  # and then extracted a given sample, which was column 10. column 10 format 
+  # is given by INFO, which is like so:
+  # GT:DP:AD:RO:QR:AO:QA:GL	
+  # Real depth was calculated by replacing the colons with field separators 
+  # and extracting columns 13 and 15, which correspond to RO and AO respectively
+  
+  # boolean vector in the length of variants where a TRUE represents a position 
+  # with 1 alternate, and a FALSE represents a position with more than 1 alternate
+  single_allele_fltr = seqGetData(gds, 'variant.id')[nAlleles(gds) == 2]
+  seqSetFilter(gds, variant.id=single_allele_fltr)
+  
+  data_to_extract = c("chromosome", "position", "$ref", "$alt", "annotation/qual", 
+    "genotype", "annotation/info/DP", "annotation/format/DP", "annotation/format/RO",
+    "annotation/format/AO", "sample.id")
+  
+  z = seqGetData(gds, data_to_extract)
+  
+  ref_allele_freq = seqAlleleFreq(gds)
+  
+  set_genotype = function(depth, ref_freq, depth_thres, ref_freq_thres){
+    
+
+    genotype = 'undefinedGenotype'
+    
+    if(is.na(depth) | depth < depth_thres){
+      genotype = 'lowDepth'
+    } else if(ref_freq >= ref_freq_thres){
+      genotype = 'Reference'
+    } else if(ref_freq <= 1-ref_freq_thres){
+      genotype = 'Alternative'
+    }
+    genotype
+  }
+  
+  tidy_metrics = function(data_mat, rnames, cnames, values_cname){
+    
+      data_mat %>%
+        `rownames<-`(rnames) %>%
+        `colnames<-`(cnames) %>%
+        as_tibble(rownames = "sample") %>%
+      pivot_longer(-sample, names_to = "variant", values_to = values_cname)
+  }
+  
+  variant_ids = paste0("var_", seq(1,dim(z$`annotation/format/DP`)[2]))
+  
+  real_depth_df = tidy_metrics(z$`annotation/format/DP`, z$sample.id, variant_ids, "RealDepth")
+  
+  ref_allele_depth_df = tidy_metrics(z$`annotation/format/RO`, z$sample.id, variant_ids, "Reference")
+  
+  alt_allele_depth_df = tidy_metrics(z$`annotation/format/AO`$data, z$sample.id, variant_ids, "Alternative1")
+  
+  genotype_df = tidy_metrics(z$genotype[1,,], z$sample.id, variant_ids, "genotype")
+  
+  df = purrr::reduce(list(real_depth_df, ref_allele_depth_df, alt_allele_depth_df, genotype_df), dplyr::left_join)
+  
+  # reshape into datatable
+  df = tibble(CHR = z$chromosome, POS = z$position, REF_Allele = z$`$ref`, 
+              ALT1 = z$`$alt`, QUAL = z$`annotation/qual`, 
+              Depth = z$`annotation/info/DP`, 
+              # Ref_percentage = ref_allele_freq, 
+              # Alt1_percentage = 1-ref_allele_freq
+              ) %>%
+    mutate(variant = variant_ids) %>%
+    left_join(purrr::reduce(list(real_depth_df, 
+                                 ref_allele_depth_df, 
+                                 alt_allele_depth_df, 
+                                 genotype_df), 
+                            dplyr::left_join)) %>%
+    mutate(Ref_percentage = Reference/RealDepth) %>%
+    mutate(Alt1_percentage = 1-Ref_percentage) %>%
+    mutate(Filt_Genotype = unlist(map2(RealDepth, Ref_percentage, set_genotype, depth_thres, ref_freq_thres ))) %>%
+    arrange(sample)
+  
+  
+  
+}
+```
+
+
+chr1	
+222	
+.	
+G	
+A	
+4116.92	
+.	
+
+AB=0;ABP=0;AC=1;AF=0.0322581;AN=31;AO=1834;CIGAR=1X;DP=8613;DPB=8613;DPRA=0;EPP=3.4839;EPPR=31.1796;GTI=0;LEN=1;MEANALT=1.67742;MQM=60.1396;MQMR=60.0372;NS=31;NUMALT=1;ODDS=370.771;PAIRED=0.825518;PAIREDR=0.829434;PAO=0;PQA=0;PQR=0;PRO=0;QA=58892;QR=229609;RO=6754;RPL=927;RPP=3.4839;RPPR=5.61452;RPR=907;RUN=1;SAF=848;SAP=25.5586;SAR=986;SRF=3179;SRP=53.4281;SRR=3575;TYPE=snp	
+
+GT:DP:AD:RO:QR:AO:QA:GL	
+
+
+0  :  223  :  220 , 3  :  220  :  7238  :  3  :  93  :  0 , -642.817	
+
+
+
+0:343:274,68:274:9447:68:2169:0,-654.759	0:232:167,64:167:5776:64:2078:0,-332.689	0:250:170,80:170:5763:80:2562:0,-287.9820:277:227,49:227:7412:49:1596:0,-523.232	0:308:257,49:257:8590:49:1552:0,-633.178	0:238:183,55:183:6137:55:1847:0,-385.941	0:320:229,91:229:7840:91:2934:0,-441.366	0:282:221,61:221:7470:61:1914:0,-499.853	0:315:253,62:253:8539:62:1971:0,-590.885	0:300:242,57:242:8365:57:1881:0,-583.330:159:131,28:131:4469:28:927:0,-318.65	0:275:235,40:235:7983:40:1327:0,-598.7930:328:262,66:262:8984:66:2086:0,-620.576	0:177:154,22:154:5460:22:771:0,-421.83	0:210:185,23:185:6461:23:711:0,-517.318	0:356:274,81:274:9300:81:2611:0,-601.773	0:279:222,56:222:7487:56:1772:0,-514.156	0:377:328,49:328:11278:49:1656:0,-865.617	0:349:303,45:303:10374:45:1436:0,-804.099	0:288:236,50:236:7987:50:1629:0,-571.995	0:197:117,79:117:4049:79:2514:0,-138.1060:240:158,81:158:5411:81:2586:0,-254.16	0:330:256,72:256:8631:72:2295:0,-570.0190:344:280,61:280:9477:61:1987:0,-673.833	0:342:278,64:278:9232:64:2017:0,-649.096	0:262:207,54:207:7138:54:1765:0,-483.375	0:120:100,20:100:3475:20:680:0,-251.448	0:396:319,77:319:10852:77:2628:0,-739.854	0:331:263,66:263:8932:66:2118:0,-613.023	1:165:3,161:3:52:161:4779:-425.4,0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

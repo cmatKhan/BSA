@@ -60,9 +60,9 @@
 #' @export
 #'
 #' @importFrom dplyr group_by mutate ungroup
-#' @importFrom QTLseqr countSNPs_cpp getPvals
+#' @importFrom QTLseqr countSNPs_cpp
 #' @importFrom stats p.adjust
-runGprimeAnalysis <-
+runGprimeAnalysis_local <-
   function(SNPset,
            windowSize = 1e6,
            outlierFilter = "deltaSNP",
@@ -76,18 +76,18 @@ runGprimeAnalysis <-
 
     message("Calculating tricube smoothed delta SNP index...")
     SNPset <- SNPset %>%
-      dplyr::mutate(tricubeDeltaSNP = BSA::tricubeStat(POS = POS, Stat = deltaSNP, windowSize, ...))
+      dplyr::mutate(tricubeDeltaSNP = tricubeStat_local(POS = POS, Stat = deltaSNP, windowSize, ...))
 
     message("Calculating G and G' statistics...")
     SNPset <- SNPset %>%
       dplyr::mutate(
-        G = BSA::getG(
+        G = getG_local(
           LowRef = AD_REF.LOW,
           HighRef = AD_REF.HIGH,
           LowAlt = AD_ALT.LOW,
           HighAlt = AD_ALT.HIGH
         ),
-        Gprime = BSA::tricubeStat(
+        Gprime = tricubeStat_local(
           POS = POS,
           Stat = G,
           windowSize = windowSize,
@@ -96,7 +96,7 @@ runGprimeAnalysis <-
       ) %>%
       dplyr::ungroup() %>%
       dplyr::mutate(
-        pvalue = QTLseqr::getPvals(
+        pvalue = getPvals_local(
           Gprime = Gprime,
           deltaSNP = deltaSNP,
           outlierFilter = outlierFilter,

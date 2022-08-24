@@ -42,9 +42,11 @@ input_paths = list(
 meta_df = readRDS(input_paths$bsa6_meta)
 
 tmp_dir = tempdir()
-samples_df = vcf_to_qtlseqr_table(input_paths$bsa6_vcf, "~/Desktop")  %>% 
+raw_samples_df = vcf_to_qtlseqr_table(input_paths$bsa6_vcf, "~/Desktop") 
+
+samples_df = raw_samples_df %>% 
   left_join(chr_map) %>% 
-  select(c("seqnames", colnames(samples_df)[2:length(samples_df)])) %>%
+  select(c("seqnames", colnames(raw_samples_df)[2:length(raw_samples_df)])) %>%
   dplyr::rename(CHR=seqnames) %>% 
   filter(!is.na(CHR)) %>%
   arrange(sample, CHR, POS)
@@ -226,29 +228,7 @@ filtered_allPoolsInOneBSA = map(allPoolsInOneBSA, filter_bsa_set)
 ### PLOTS
 
 chosenSize <- 5000
-# Pools <- list()
-# allPools <- list()
-# 
-# ptm <- proc.time()
-# no_cores <- detectCores()-1 # length(names(pools_filteredBSA)) 
-# cl <- makeCluster(no_cores)
-# 
-# # export data, functions and variables to cluster
-# clusterExport(cl, c("filtered_summedReplicatesBSA",
-#                     "binner2", 
-#                     "Pools", 
-#                     "allPools", 
-#                     "chosenSize"))
-# 
-# # Calling the binner2 in parallel
-# Pools <- parLapply(cl, names(pools_filteredBSA),
-#   function(x) {
-#     # make sure this is documented
-#     binner2(pools_filteredBSA[[grep(x, names(pools_filteredBSA))]], bin.size = chosenSize)
-#   }
-# )
-# stopCluster(cl) # Closing the parallel cluster
-# proc.time() - ptm
+
 
 bin_variants = function(variant_metrics_df, 
                         tiled_genome_df,
@@ -263,9 +243,9 @@ bin_variants = function(variant_metrics_df,
     stop(sprintf("%s not in tiled_genome_df colnames", chr_colname))
   }
   
-  final_col_order = c(chr_colname, 'binFloor', 'binCeiling', 
+  final_col_order = c(chr_colname, 'tile', 'binFloor', 'binCeiling', 
                       'binMiddle', 'mean_deltaSNP', 'smoothedDeltaSNP',
-                      'mean_qvalue', 'mut_perBin', 'bin_size', 'singificance')
+                      'mean_qvalue', 'mut_perBin', 'bin_size', 'significance')
   
   variant_metrics_chr_split = variant_metrics_df %>%
   group_by(!!rlang::sym(chr_colname)) %>%
@@ -291,16 +271,18 @@ bin_variants = function(variant_metrics_df,
     group_by(!!rlang::sym(chr_colname), tile) %>%
     summarize(mean_deltaSNP = mean(deltaSNP, na.rm=TRUE),
               smoothedDeltaSNP   = mean(tricubeDeltaSNP, na.rm = TRUE),
-              mean_qvalue        = mean(qvalue, na.rm = TRUE)
+              mean_qvalue        = mean(qvalue, na.rm = TRUE),
               qval_below_thres_n = sum(qvalue < qvalue_lower_thres),
               qval_above_thres_n = sum(qvalue >= qvalue_upper_thres),
               mut_perBin         = n(),
               .groups = 'keep') %>%
     mutate(significance = qval_below_thres_n / qval_above_thres_n,
            tile = str_remove_all(tile, '\\[|\\]|\\(|\\)')) %>%
-    separate(tile, c('binFloor', 'binCeiling'), sep=",") %>%
+    separate(tile, c('binFloor', 'binCeiling'), sep=",", remove = FALSE) %>%
     mutate(binFloor = as.integer(binFloor),
-           binCeiling = as.integer(binCeiling)) 
+           binCeiling = as.integer(binCeiling)) %>%
+    mutate(bin_size = binCeiling - binFloor,
+           binMiddle = (binFloor + binCeiling) / 2)
   
   if(length(setdiff(final_col_order, colnames(out))) > 0){
     stop(paste0(
@@ -310,11 +292,9 @@ bin_variants = function(variant_metrics_df,
                   paste(colnames(out), collapse=","))) )
   } else{
     out %>%
-      select(all_of(final_col_order))
+     dplyr:: select(dplyr::all_of(final_col_order))
   }
 
-    
-  
 }
 
 tile_metrics = function(metrics_df, 
@@ -332,40 +312,132 @@ tile_metrics = function(metrics_df,
 
 }
 
-tiled_genome_df = tiled_genome_df %>%
+tiled_genome_df = 
+  tileGenome(seqlengths(kn99_genome), 
+             tilewidth = 1000, 
+             cut.last.tile.in.chrom = TRUE) %>% 
+  as_tibble() %>% 
+  left_join(chr_map) %>%
   dplyr::rename(CHROM=seqnames) 
   
 
-x = bin_variants(filtered_allPoolsInOneBSA$oneMouse$brain_15, 
-                 tiled_genome_df,
-                 seqlengths(kn99_genome),
-                 "CHROM")
 
-x  %>%
-    summarize(deltaSNP = mean(deltaSNP, na.rm=TRUE),
-              tricubeDeltaSNP = mean(tricubeDeltaSNP, na.rm = TRUE)) %>%
-  mutate(qval_below_thres_n = count(qvalue < .1))
 
-%>%
-    mutate(significance = qval_below_thres_n / qval_above_thres_n)
 
-binner2_by_group = function(bsa_set){
-  foreach(
-    df = bsa_set,
+bin_variants_by_group = function(set_name, bsa_set){
+  out = foreach(
+    sample_name = names(bsa_set),
     .inorder = TRUE
   ) %do% {
-    binner2(df, bin.size = chosenSize)
+    df = bsa_set[[sample_name]]
+    x = bin_variants(df, 
+                 tiled_genome_df,
+                 seqlengths(kn99_genome),
+                 "CHROM") %>%
+      mutate(group = set_name,
+             sample = sample_name)
   }
+  do.call('rbind', out)
 }
 
-x = binner2(filtered_allPoolsInOneBSA$sepMouse$lung_8)
+# ptm=proc.time()
+bin_list = list(
+  binned_filtered_summedReplicates = map(names(filtered_summedReplicatesBSA), 
+                                       ~bin_variants_by_group(
+                                         .,filtered_summedReplicatesBSA[[.]])) %>%
+  do.call('rbind',.),
+  
+  binned_filtered_summedConditions = map(names(filtered_allPoolsInOneBSA), 
+                                       ~bin_variants_by_group(
+                                         .,filtered_allPoolsInOneBSA[[.]])) %>%
+    do.call('rbind', .)
+) 
 
-# binned_filtered_summedReplicatesBSA = map(summedReplicatesBSA, binner2_by_group)
+graphing_df = bin_list %>%
+  do.call('rbind', .) %>%
+  mutate(collapse_level = 
+           ifelse(str_detect(sample, "^\\d|^all"),
+                  "replicate", "condition"))
+# proc.time()-ptm
 
+bin_max_min_df = graphing_df %>% 
+  filter(str_count(sample, "_") == 2) %>%
+  separate(sample, c('pool', 'cond', 'day'), sep = "_", remove = FALSE) %>%
+  group_by(CHROM, tile, sample, collapse_level) %>% 
+  summarize(pool_max_smoothed   = max(smoothedDeltaSNP, na.rm = TRUE),
+            pool_min_smoothed   = min(smoothedDeltaSNP, na.rm = TRUE),
+            pool_max_unsmoothed = max(mean_deltaSNP, na.rm = TRUE),
+            pool_min_unsmoothed = min(mean_deltaSNP, na.rm = TRUE),
+            .groups = 'keep') %>%
+  separate(tile, c("start","stop"), remove = FALSE,sep = ",") %>%
+  arrange(sample, CHROM, start) %>%
+  ungroup()
+
+# %>%
+#   pivot_wider(id_cols = c(CHROM, tile),
+#               names_from = c(cond,day,group), 
+#               values_from = c(bin_min_smoothed, 
+#                               bin_max_smoothed,
+#                               bin_min_unsmoothed,
+#                               bin_max_unsmoothed))
+
+# graphing_df_wide = graphing_df %>%
+#   pivot_wider(id_cols = c(CHROM, tile), 
+#               names_from = c(sample,group), 
+#               values_from = c(mean_deltaSNP, 
+#                               smoothedDeltaSNP, 
+#                               mut_perBin, 
+#                               significance)) 
+
+# the number of unique chr/bin positions should be the same in both
+# frames
+stopifnot(identical(dim(graphing_df %>% distinct(CHROM, tile))[1],
+                    dim(bin_max_min_df %>% distinct(CHROM, tile))[1]))
+
+# graphing_df_wide = graphing_df_wide %>%
+#   left_join(bin_max_min_df, by = c('CHROM', 'tile'))
+
+graphing_df_augment = graphing_df %>%
+  ungroup() %>%
+  left_join(bin_max_min_df, 
+            by = c("CHROM", "tile", "sample", "collapse_level")) %>%
+  arrange(sample, CHROM, binFloor)
 
 
 ```
 
+```{r}
+# TODO this needs to be checked
+#The SNPindex.LOW should be the same for YPD and Lungs....
+MaxAndMins = filtered_allPoolsInOneBSA$sepMouse$ypd_1 %>% 
+  select(c(CHROM,POS,REF,ALT, SNPindex.LOW)) %>%
+  mutate(min_SNPchange = -1*SNPindex.LOW, max_SNPchange = 1-SNPindex.LOW) %>% 
+  select(-SNPindex.LOW)
+
+#This mutation was erased in the addition of the drug marker in the C8 parent (It was in the arm).
+MaxAndMins=MaxAndMins %>% 
+  filter(!(CHROM=="chr2" & 
+             (POS==283162 | POS==283652| 
+                (POS>466000 & POS<467000)))) 
+```
+
+```{r}
+
+chr_name = "CP022321.1"
+
+graphing_df_augment %>%
+  filter(CHROM==chr_name, 
+         collapse_level == "condition") %>%
+  ggplot(aes(binMiddle/1000, smoothedDeltaSNP)) +
+    geom_line(data = filter(MaxAndMins, CHROM == chr_name), aes(POS/1000, min_SNPchange)) +
+    geom_line(data = filter(MaxAndMins, CHROM == chr_name), aes(POS/1000, max_SNPchange)) +
+    geom_pointrange(aes(ymin=pool_min_smoothed,
+                        ymax=pool_max_smoothed ,
+                        x=binMiddle/1000,
+                        y=smoothedDeltaSNP))
+  
+
+```
 
 
 

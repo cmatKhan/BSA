@@ -111,7 +111,7 @@ bin_variants = function(variant_metrics_df,
 
 }
 
-#' @title FUNCTION_TITLE
+#' @title Tile Metrics Dataframe
 #' @description FUNCTION_DESCRIPTION
 #'
 #' @param metrics_df PARAM_DESCRIPTION
@@ -137,8 +137,6 @@ bin_variants = function(variant_metrics_df,
 #'  \code{\link[rlang]{sym}}
 #'
 #' @rdname tile_metrics
-#'
-#' @export
 #'
 #' @importFrom dplyr mutate
 #' @importFrom rlang sym

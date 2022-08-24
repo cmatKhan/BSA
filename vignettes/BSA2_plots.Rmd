@@ -45,8 +45,9 @@ rows are bins, columns are columns are found in
 ### PLOTS
 
 chosenSize <- 5000
+
+
 Pools <- list()
-allPools <- list()
 
 ptm <- proc.time()
 no_cores <- detectCores()-1 # length(names(pools_filteredBSA)) 
@@ -73,24 +74,29 @@ Pools <- parLapply(
 stopCluster(cl) # Closing the parallel cluster
 proc.time() - ptm
 
+names(Pools) <- names(pools_filteredBSA)
 ```
 
 
 
 ```{r}
+allPools <- list()
+
 for (i in names(allPoolsInOne_filteredBSA)) {
   allPools[[i]] <- binner2(allPoolsInOne_filteredBSA[[i]],
     bin.size = chosenSize
   )
 }
 
-names(Pools) <- names(pools_filteredBSA)
 names(allPools) <- names(allPoolsInOne_filteredBSA)
-condition <- c("YPD", "Lungs")
+
 ```
 
 ```{r}
+
 ###### For plots with smoothed Delta SNP #####
+
+condition <- c("YPD", "Lungs")
 samples <- list()
 samples <- lapply(c(1:3), FUN = function(x) {
   data.frame(
@@ -99,6 +105,7 @@ samples <- lapply(c(1:3), FUN = function(x) {
     binCeiling = allPools[[names(allPools)[x]]]$binCeiling,
     binMiddle = allPools[[names(allPools)[x]]]$binMiddle,
     Bin_size = allPools[[names(allPools)[x]]]$Bin_size,
+    
     P1 = Pools[[paste0("P1", names(allPools)[x])]]$smoothedDeltaSNP,
     P1sig = Pools[[paste0("P1", names(allPools)[x])]]$Significance,
     P2 = Pools[[paste0("P2", names(allPools)[x])]]$smoothedDeltaSNP,
@@ -109,14 +116,17 @@ samples <- lapply(c(1:3), FUN = function(x) {
     P4sig = Pools[[paste0("P4", names(allPools)[x])]]$Significance,
     P5 = Pools[[paste0("P5", names(allPools)[x])]]$smoothedDeltaSNP,
     P5sig = Pools[[paste0("P5", names(allPools)[x])]]$Significance,
+    
     All_pools = allPools[[names(allPools)[x]]]$smoothedDeltaSNP,
     mut_perBin = allPools[[names(allPools)[x]]]$mut_perBin,
     Significance = allPools[[names(allPools)[x]]]$Significance
+    
   ) %>%
     mutate(
       pool_max = pmax(P1, P2, P3, P4, P5, na.rm = T),
       pool_min = pmin(P1, P2, P3, P4, P5, na.rm = T),
-      Condition = rep(condition[x], nrow(allPools[[names(allPools)[x]]]))
+      Condition = rep(condition[x], 
+                      nrow(allPools[[names(allPools)[x]]]))
     )
 })
 names(samples) <- names(allPools)[c(1:3)]
@@ -159,13 +169,20 @@ names(samplesNonSmooth) <- names(allPools)[c(1:3)]
 
 ```{r}
 # This is a table with the Max and Min of ∆SNP for each position.
-MaxAndMins <- cbind(allPoolsInOne_filteredBSA[["Y"]][, 1:4], data.frame(
-  Min_SNPchange = -(allPoolsInOne_filteredBSA[["Y"]]$SNPindex.LOW),
-  Max_SNPchange = 1 - (allPoolsInOne_filteredBSA[["Y"]]$SNPindex.LOW)
+MaxAndMins <- 
+  cbind(allPoolsInOne_filteredBSA[["Y"]][, 1:4], 
+        data.frame(
+          Min_SNPchange = -(allPoolsInOne_filteredBSA[["Y"]]$SNPindex.LOW),
+          Max_SNPchange = 1 - (allPoolsInOne_filteredBSA[["Y"]]$SNPindex.LOW)
 )) # The SNPindex.LOW should be the same for YPD and Lungs....
 
 
-MaxAndMins <- MaxAndMins %>% filter(!(CHROM == "chr2" & (POS == 283162 | POS == 283652 | (POS > 466000 & POS < 467000)))) # This mutation was erased in the addition of the drug marker in the C8 parent (It was in the arm).
+MaxAndMins <- MaxAndMins %>% 
+  filter(!(CHROM == "chr2" & 
+             (POS == 283162 | POS == 283652 | 
+                (POS > 466000 & POS < 467000)))) 
+# This mutation was erased in the addition of 
+# the drug marker in the C8 parent (It was in the arm).
 ```
 
 ```{r}

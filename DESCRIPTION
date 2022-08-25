@@ -29,6 +29,7 @@ Remotes:
 Suggests: 
     BSgenome.CneoformansVarGrubiiKN99.NCBI.ASM221672v1 (>= 1.0.0),
     foreach (>= 1.5.2),
+    GenomicRanges (>= 1.48.0),
     knitr,
     rmarkdown,
     tidyverse (>= 1.3.2)

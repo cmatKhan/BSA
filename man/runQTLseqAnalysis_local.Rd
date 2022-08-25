@@ -2,7 +2,7 @@
 % Please edit documentation in R/runQTLseqAnalysis.R
 \name{runQTLseqAnalysis_local}
 \alias{runQTLseqAnalysis_local}
-\title{run QTL seq analysis}
+\title{Identify QTL using a smoothed G statistic}
 \usage{
 runQTLseqAnalysis_local(
   SNPset,
@@ -12,32 +12,98 @@ runQTLseqAnalysis_local(
   depth = NULL,
   replications = 10000,
   filter = 0.3,
-  intervals = c(95, 99)
+  intervals = c(95, 99),
+  chrom_col = "CHROM",
+  coordinate_col = "POS",
+  delta_snp_col = "deltaSNP",
+  dp_low_col = "DP.LOW",
+  dp_high_col = "DP.HIGH"
 )
 }
 \arguments{
-\item{SNPset}{PARAM_DESCRIPTION}
+\item{SNPset}{Data frame SNP set containing previously filtered SNPs}
 
-\item{windowSize}{PARAM_DESCRIPTION, Default: 1e+06}
+\item{windowSize}{the window size (in base pairs) bracketing each SNP for which
+to calculate the statitics. Magwene et. al recommend a window size of ~25
+cM, but also recommend optionally trying several window sizes to test if
+peaks are over- or undersmoothed.}
 
-\item{popStruc}{PARAM_DESCRIPTION, Default: 'F2'}
+\item{popStruc}{the population structure. Defaults to "F2" and assumes "RIL" otherwise.}
 
-\item{bulkSize}{PARAM_DESCRIPTION}
+\item{bulkSize}{non-negative integer vector. The number of individuals in
+each simulated bulk. Can be of length 1, then both bulks are set to the
+same size. Assumes the first value in the vector is the simulated high
+bulk.}
 
-\item{depth}{PARAM_DESCRIPTION, Default: NULL}
+\item{replications}{integer. The number of bootstrap replications.}
 
-\item{replications}{PARAM_DESCRIPTION, Default: 10000}
+\item{filter}{numeric. A minimum SNP-index filter}
 
-\item{filter}{PARAM_DESCRIPTION, Default: 0.3}
+\item{intervals}{confidence intervals -- note this is part of daniel's
+additional code to the QTLseqR package}
 
-\item{intervals}{PARAM_DESCRIPTION, Default: c(95, 99)}
+\item{chrom_col}{name of the column which stores the chromosome label.
+Default is CHROM}
+
+\item{coordinate_col}{name of the column which stores the snp coordinate.
+Default is POS}
+
+\item{delta_snp_col}{name of the column which stores the change in allele
+frequency. Default is deltaSNP}
+
+\item{dp_low_col}{name of the column which stores the dp_low value. Default
+DP.LOW}
+
+\item{dp_high_col}{name of the column which stores the dp_high value.
+Default is DP.HIGH}
 }
 \value{
-OUTPUT_DESCRIPTION
+The supplied SNP set tibble after G' analysis. Includes five new
+columns: \itemize{\item{G - The G statistic for each SNP} \item{Gprime -
+The tricube smoothed G statistic based on the supplied window size}
+\item{pvalue - the pvalue at each SNP calculatd by non-parametric
+estimation} \item{negLog10Pval - the -Log10(pvalue) supplied for quick
+plotting} \item{qvalue - the Benajamini-Hochberg adjusted p-value}}
 }
 \description{
-FUNCTION_DESCRIPTION
+A wrapper for all the functions that perform the full G prime analysis to
+identify QTL. The following steps are performed:\cr 1) Genome-wide G
+statistics are calculated by \code{\link{getG}}. \cr G is defined by the
+equation: \deqn{G = 2*\sum_{i=1}^{4} n_{i}*ln\frac{obs(n_i)}{exp(n_i)}}{G = 2
+* \sum n_i * ln(obs(n_i)/exp(n_i))} Where for each SNP, \eqn{n_i} from i = 1
+to 4 corresponds to the reference and alternate allele depths for each bulk,
+as described in the following table: \tabular{rcc}{ Allele \tab High Bulk
+\tab Low Bulk \cr Reference \tab \eqn{n_1} \tab \eqn{n_2} \cr Alternate \tab
+\eqn{n_3} \tab \eqn{n_4} \cr} ...and \eqn{obs(n_i)} are the observed allele
+depths as described in the data frame. \code{\link{getG}} calculates the G statistic
+using expected values assuming read depth is equal for all alleles in both
+bulks: \deqn{exp(n_1) = ((n_1 + n_2)*(n_1 + n_3))/(n_1 + n_2 + n_3 + n_4)}
+\deqn{exp(n_2) = ((n_2 + n_1)*(n_2 + n_4))/(n_1 + n_2 + n_3 + n_4)}
+\deqn{exp(n_3) = ((n_3 + n_1)*(n_3 + n_4))/(n_1 + n_2 + n_3 + n_4)}
+\deqn{exp(n_4) = ((n_4 + n_2)*(n_4 + n_3))/(n_1 + n_2 + n_3 + n_4)}\cr 2) G'
+\itemize{
+\item A tricube-smoothed G statistic is predicted by local regression within each
+chromosome using \code{\link{tricubeStat}}. This works as a weighted average
+across neighboring SNPs that accounts for Linkage disequilibrium (LD) while
+minizing noise attributed to SNP calling errors. G values for neighboring
+SNPs within the window are weighted by physical distance from the focal SNP.
+\cr \cr 3) P-values are estimated based using the non-parametric method
+described by Magwene et al. 2011 with the function \code{\link{getPvals}}.
+Breifly, using the natural log of Gprime a median absolute deviation (MAD) is
+calculated. The Gprime set is trimmed to exclude outlier regions (i.e. QTL)
+based on Hampel's rule. An alternate method for filtering out QTL is proposed
+using absolute delta SNP indeces greater than 0.1 to filter out potential
+QTL. An estimation of the mode of the trimmed set is calculated using the
+\code{\link[modeest]{mlv}} function from the package modeest. Finally, the
+mean and variance of the set are estimated using the median and mode and
+p-values are estimated from a log normal distribution. \cr \cr 4) Negative
+Log10- and Benjamini-Hochberg adjusted p-values are calculated using
+\code{\link[stats]{p.adjust}}
+}
 }
 \details{
 DETAILS
+}
+\note{
+THIS IS NEARLY A VERBATIM COPY OF QTLseqR
 }

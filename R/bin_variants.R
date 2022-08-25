@@ -56,46 +56,45 @@ bin_variants = function(variant_metrics_df,
     stop(sprintf("%s not in tiled_genome_df colnames", chr_colname))
   }
 
-  final_col_order = c(chr_colname, 'binFloor', 'binCeiling',
-                      'binMiddle', 'mean_deltaSNP', 'smoothedDeltaSNP',
+  final_col_order = c(chr_colname, 'tile', 'binFloor', 'binCeiling',
+                      'binMiddle', 'mean_deltaSNP', 'mean_smoothed_delta_snp',
                       'mean_qvalue', 'mut_perBin', 'bin_size', 'significance')
 
   variant_metrics_chr_split = variant_metrics_df %>%
-    dplyr::group_by(!!rlang::sym(chr_colname)) %>%
-    dplyr::group_split()
+    group_by(!!rlang::sym(chr_colname)) %>%
+    group_split()
 
   names(variant_metrics_chr_split) = unlist(
-    purrr::map(variant_metrics_chr_split, ~unique(dplyr::pull(.,chr_colname)))
+    map(variant_metrics_chr_split, ~unique(pull(.,chr_colname)))
   )
 
   tiled_genome_chr_split = tiled_genome_df %>%
-    dplyr::group_by(!!rlang::sym(chr_colname)) %>%
-    dplyr::group_split()
+    group_by(!!rlang::sym(chr_colname)) %>%
+    group_split()
 
   names(tiled_genome_chr_split) = unlist(
-    purrr::map(tiled_genome_chr_split, ~unique(dplyr::pull(.,chr_colname)))
+    map(tiled_genome_chr_split, ~unique(pull(.,chr_colname)))
   )
 
-  out = purrr::map(names(variant_metrics_chr_split),
+  out = map(names(variant_metrics_chr_split),
             ~tile_metrics(variant_metrics_chr_split[[.]],
                           tiled_genome_chr_split[[.]],
                           chr_seqlengths[[.]])) %>%
     do.call('rbind', .) %>%
-    dplyr::group_by(!!rlang::sym(chr_colname), tile) %>%
-    dplyr::summarize(
-              mean_deltaSNP      = mean(deltaSNP, na.rm=TRUE),
-              smoothedDeltaSNP   = mean(tricubeDeltaSNP, na.rm = TRUE),
-              mean_qvalue        = mean(qvalue, na.rm = TRUE),
-              qval_below_thres_n = sum(qvalue < qvalue_lower_thres),
-              qval_above_thres_n = sum(qvalue >= qvalue_upper_thres),
-              mut_perBin         = dplyr::n(),
+    group_by(!!rlang::sym(chr_colname), tile) %>%
+    summarize(mean_deltaSNP             = mean(deltaSNP, na.rm=TRUE),
+              mean_smoothed_delta_snp   = mean(tricubeDeltaSNP, na.rm = TRUE),
+              mean_qvalue               = mean(qvalue, na.rm = TRUE),
+              qval_below_thres_n        = sum(qvalue < qvalue_lower_thres),
+              qval_above_thres_n        = sum(qvalue >= qvalue_upper_thres),
+              mut_perBin                = n(),
               .groups = 'keep') %>%
-    dplyr::mutate(significance = qval_below_thres_n / qval_above_thres_n,
-           tile = stringr::str_remove_all(tile, '\\[|\\]|\\(|\\)')) %>%
-    tidyr::separate(tile, c('binFloor', 'binCeiling'), sep=",") %>%
-    dplyr::mutate(binFloor = as.integer(binFloor),
+    mutate(significance = qval_below_thres_n / qval_above_thres_n,
+           tile = str_remove_all(tile, '\\[|\\]|\\(|\\)')) %>%
+    separate(tile, c('binFloor', 'binCeiling'), sep=",", remove = FALSE) %>%
+    mutate(binFloor = as.integer(binFloor),
            binCeiling = as.integer(binCeiling)) %>%
-    dplyr::mutate(bin_size = binCeiling - binFloor,
+    mutate(bin_size = binCeiling - binFloor,
            binMiddle = (binFloor + binCeiling) / 2)
 
   if(length(setdiff(final_col_order, colnames(out))) > 0){
@@ -147,7 +146,7 @@ tile_metrics = function(metrics_df,
                         right_inclusive = FALSE){
 
   metrics_df %>%
-    dplyr::mutate(tile =
+    mutate(tile =
              cut(!!rlang::sym(cut_col),
                  c(genome_tile_df$start, chr_seqlength + 1),
                  include.lowest = left_inclusive,

@@ -34,16 +34,22 @@ analyzer = function(SNPcomparison,
                      outlierFilt = "deltaSNP",
                      filter_chr_list = NULL) {
 
+  # filter the SNP comparison frame -- remove na, and filter out
+  # chromosomes passed filter_chr_list
   fltr_SNPcomparison = SNPcomparison %>%
+    # TODO consider replacing this with complete.cases(.)?
     dplyr::filter(!is.nan(deltaSNP)) %>%
     dplyr::filter(!is.na(SNPindex.LOW) | !is.na(SNPindex.HIGH)) %>%
     # for instance, if you wish to remove chrM, then pass c("chrM") to
     # filter_chr_list
     filter(if(!is.null(filter_chr_list)) !CHROM %in% filter_chr_list else TRUE)
 
+  # calculate percentiles, passed in as minDepthPercentile and
+  # maxDepthPercentile on  of DP.LOW and DP.HIGH
   quants <- stats::quantile(fltr_SNPcomparison$DP.LOW + fltr_SNPcomparison$DP.HIGH,
-                     na.rm = T,
-                     probs = c(minDepthPercentile, maxDepthPercentile))
+                     na.rm = TRUE,
+                     probs = c(minDepthPercentile,
+                               maxDepthPercentile))
 
   df_filtered <- QTLseqr::filterSNPs(
     SNPset = fltr_SNPcomparison,
@@ -55,6 +61,7 @@ analyzer = function(SNPcomparison,
     verbose = TRUE
   )
 
+  # note -- this function is slightly modified from QTLseqR
   df_filtered <- runQTLseqAnalysis_local(df_filtered,
     windowSize = windowSize,
     popStruc = "RIL",
@@ -62,6 +69,7 @@ analyzer = function(SNPcomparison,
     replications = 10000, intervals = c(95, 99)
   )
 
+  # note -- this function is slightly modified from QTLseqR
   df_filtered <- runGprimeAnalysis_local(df_filtered,
                                    windowSize = windowSize,
                                    outlierFilter = outlierFilt,

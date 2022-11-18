@@ -7,13 +7,15 @@
 #'   a list to create a table that can be used by the package QTLseq.
 #'
 #' @param samples_with_meta_df A dataframe representing samples
-#'   \code{\link[BSA]{vcf_to_qtlseqr}} joined with the sample metadata
+#'   \code{\link[BSA]{vcf_to_qtlseqr_table}} joined with the sample metadata
 #' @param low_bulk_sample String. The name of the sample (and of the element in
 #'   the vcf_df list) corresponding to the Low Bulk.
 #' @param high_bulk_sample The name of the sample (and of the element in
 #'   the vcf_df list) corresponding to the High Bulk.
 #' @param sample_col name of the column with the sample names. Must contain
 #'   the low_bulk_sample and high_bulk_sample. Default 'sample'.
+#' @param bulk_col name of the column which stores the different sample comparisons.
+#' bulk is a name retained from QTLSeqR and traditional BSA experiments
 #'
 #' @return a data.frame with the format that can be understood by QTLseq.
 #'
@@ -26,9 +28,10 @@
 #'
 #' @importFrom dplyr mutate
 picker2 = function(samples_with_meta_df,
-                    low_bulk_sample, high_bulk_sample,
-                    sample_col = "sample",
-                    bulk_col = "bulk") {
+                   low_bulk_sample,
+                   high_bulk_sample,
+                   sample_col = "sample",
+                   bulk_col = "bulk") {
 
   if(length(setdiff(c(sample_col, bulk_col),
                     colnames(samples_with_meta_df))) > 0){

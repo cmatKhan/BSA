@@ -9,7 +9,7 @@
 #'   are weighted by physical distance from the focal SNP.
 #' @param POS A vector of genomic positions for each SNP
 #' @param Stat A vector of values for a given statistic for each SNP
-#' @param WinSize the window size (in base pairs) bracketing each SNP for which
+#' @param windowSize the window size (in base pairs) bracketing each SNP for which
 #'   to calculate the statitics. Magwene et. al recommend a window size of ~25
 #'   cM, but also recommend optionally trying several window sizes to test if
 #'   peaks are over- or undersmoothed. Default: 2e+06

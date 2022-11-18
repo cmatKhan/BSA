@@ -87,7 +87,7 @@ tidy_metrics = function(data_mat, values_cname, rnames, cnames){
 #'   for a genotype to be called Reference or Alternative, Default: 0.9
 #' @param single_allele_loci_only Boolean, set to TRUE to exclude all
 #'   multi allelic loci. Set to FALSE to keep all variants, Default: TRUE
-#' @param overwrite_gds if the gds already exists, skip creating and just open.
+#' @param overwrite if the gds already exists, skip creating and just open.
 #'   Default is FALSE
 #' @param verbose Boolean. Set to true to set the SeqArray functions to verbose.
 #'   Default is FALSE.

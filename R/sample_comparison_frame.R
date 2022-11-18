@@ -16,6 +16,8 @@
 #'   the other to the other sample conditions, Default: 'lowBulk'
 #' @param var2_name as in var1_name, this will rename the second column
 #'   in the output frame, Default: 'highBulk'
+#' @param base_cond_in_each_group whether to include the base condition in
+#' each group. Default TRUE
 #'
 #' @return A two column dataframe where the first column is the condition
 #'   against which all other sample conditions in that group are compared.

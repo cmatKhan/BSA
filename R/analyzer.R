@@ -7,17 +7,17 @@
 #'   samples together (allPoolsInOneComparison) we can begin filtering the
 #'   samples. First idea is to filter by the following params
 #'
-#' @param SNPcomparison: lower tenth percentile >
-#'   quantile(sum of depth in both bulks, na.rm = T, probs = 0.1))
-#' @param maxDepthPercentile depth: higher fifth percentile >
-#'   quantile(sum of depth in both bulks, na.rm = T, probs = 0.95)), Default: 0.1
+#' @param SNPcomparison lower tenth percentile >
+#' quantile(sum of depth in both bulks, na.rm = T, probs = 0.1))
 #' @param minDepthPercentile sample depth - Half the min depth, Default: 0.9
+#' @param maxDepthPercentile depth: higher fifth percentile >
+#' quantile(sum of depth in both bulks, na.rm = T, probs = 0.95)), Default: 0.1
 #' @param windowSize PARAM_DESCRIPTION, Default: 25000
 #' @param bulkSize PARAM_DESCRIPTION, Default: 20
-#' @param outlierFilt see \code{\link{QTLseqR::runGprimeAnalysis}}, Default: 'deltaSNP'
-#' @param filter_chr_list PARAM_DESCRIPTION, Default: NULL
+#' @param outlierFilt see QTLseqR::runGprimeAnalysis, Default: 'deltaSNP'
+#' @param filter_chr_list list of chromosome names to exclude, Default: NULL
 #'
-#' @return OUTPUT_DESCRIPTION
+#' @return A filtered dataframe
 #'
 #' @details DETAILS
 #'

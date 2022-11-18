@@ -15,6 +15,9 @@ analyzer(
 )
 }
 \arguments{
+\item{SNPcomparison}{lower tenth percentile >
+quantile(sum of depth in both bulks, na.rm = T, probs = 0.1))}
+
 \item{minDepthPercentile}{sample depth - Half the min depth, Default: 0.9}
 
 \item{maxDepthPercentile}{depth: higher fifth percentile >
@@ -24,15 +27,12 @@ quantile(sum of depth in both bulks, na.rm = T, probs = 0.95)), Default: 0.1}
 
 \item{bulkSize}{PARAM_DESCRIPTION, Default: 20}
 
-\item{outlierFilt}{see \code{\link{QTLseqR::runGprimeAnalysis}}, Default: 'deltaSNP'}
+\item{outlierFilt}{see QTLseqR::runGprimeAnalysis, Default: 'deltaSNP'}
 
-\item{filter_chr_list}{PARAM_DESCRIPTION, Default: NULL}
-
-\item{SNPcomparison:}{lower tenth percentile >
-quantile(sum of depth in both bulks, na.rm = T, probs = 0.1))}
+\item{filter_chr_list}{list of chromosome names to exclude, Default: NULL}
 }
 \value{
-OUTPUT_DESCRIPTION
+A filtered dataframe
 }
 \description{
 Now that we have a list with all comparisons for replicates

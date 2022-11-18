@@ -41,11 +41,11 @@ those loci which in which \code{parent_ref_strain} is labelled Reference and
 \item{single_allele_loci_only}{Boolean, set to TRUE to exclude all
 multi allelic loci. Set to FALSE to keep all variants, Default: TRUE}
 
+\item{overwrite}{if the gds already exists, skip creating and just open.
+Default is FALSE}
+
 \item{verbose}{Boolean. Set to true to set the SeqArray functions to verbose.
 Default is FALSE.}
-
-\item{overwrite_gds}{if the gds already exists, skip creating and just open.
-Default is FALSE}
 }
 \value{
 A dataframe with the following columns:  CHR POS REF_Allele ALT1 QUAL

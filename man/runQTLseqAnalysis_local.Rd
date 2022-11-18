@@ -35,6 +35,9 @@ each simulated bulk. Can be of length 1, then both bulks are set to the
 same size. Assumes the first value in the vector is the simulated high
 bulk.}
 
+\item{depth}{This is calculated in the script, usually. It is input to a
+QTLSeqR function simulateConfInt_local}
+
 \item{replications}{integer. The number of bootstrap replications.}
 
 \item{filter}{numeric. A minimum SNP-index filter}

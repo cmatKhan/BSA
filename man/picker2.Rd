@@ -14,7 +14,7 @@ picker2(
 }
 \arguments{
 \item{samples_with_meta_df}{A dataframe representing samples
-\code{\link[BSA]{vcf_to_qtlseqr}} joined with the sample metadata}
+\code{\link[BSA]{vcf_to_qtlseqr_table}} joined with the sample metadata}
 
 \item{low_bulk_sample}{String. The name of the sample (and of the element in
 the vcf_df list) corresponding to the Low Bulk.}
@@ -24,6 +24,9 @@ the vcf_df list) corresponding to the High Bulk.}
 
 \item{sample_col}{name of the column with the sample names. Must contain
 the low_bulk_sample and high_bulk_sample. Default 'sample'.}
+
+\item{bulk_col}{name of the column which stores the different sample comparisons.
+bulk is a name retained from QTLSeqR and traditional BSA experiments}
 }
 \value{
 a data.frame with the format that can be understood by QTLseq.

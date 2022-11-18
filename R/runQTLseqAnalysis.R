@@ -45,6 +45,8 @@
 #'   each simulated bulk. Can be of length 1, then both bulks are set to the
 #'   same size. Assumes the first value in the vector is the simulated high
 #'   bulk.
+#' @param depth This is calculated in the script, usually. It is input to a
+#' QTLSeqR function simulateConfInt_local
 #' @param replications integer. The number of bootstrap replications.
 #' @param filter numeric. A minimum SNP-index filter
 #' @param intervals confidence intervals -- note this is part of daniel's

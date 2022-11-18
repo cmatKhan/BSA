@@ -11,7 +11,7 @@ tricubeStat_local(POS, Stat, windowSize = 2e+06)
 
 \item{Stat}{A vector of values for a given statistic for each SNP}
 
-\item{WinSize}{the window size (in base pairs) bracketing each SNP for which
+\item{windowSize}{the window size (in base pairs) bracketing each SNP for which
 to calculate the statitics. Magwene et. al recommend a window size of ~25
 cM, but also recommend optionally trying several window sizes to test if
 peaks are over- or undersmoothed. Default: 2e+06}

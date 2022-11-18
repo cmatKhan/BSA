@@ -33,6 +33,9 @@ the other to the other sample conditions, Default: 'lowBulk'}
 
 \item{var2_name}{as in var1_name, this will rename the second column
 in the output frame, Default: 'highBulk'}
+
+\item{base_cond_in_each_group}{whether to include the base condition in
+each group. Default TRUE}
 }
 \value{
 A two column dataframe where the first column is the condition

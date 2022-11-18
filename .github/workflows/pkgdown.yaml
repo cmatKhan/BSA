@@ -28,16 +28,16 @@ jobs:
         with:
           use-public-rspm: true
 
-      - uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: any::pkgdown, local::.
-          needs: website
-
       - name: Install Linux system dependencies
         run: |
           sysreqs=$(Rscript -e 'cat("apt-get update -y && apt-get install -y libxml2-dev ", paste(gsub("apt-get install -y ", "", remotes::system_requirements("ubuntu", "20.04")), collapse = " "))')
           echo $sysreqs
           sudo -s eval "$sysreqs"
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::pkgdown, local::.
+          needs: website
 
       - name: Build site
         run: pkgdown::build_site_github_pages(clean = TRUE, new_process = FALSE, install = FALSE)

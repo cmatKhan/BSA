@@ -2,7 +2,7 @@
 % Please edit documentation in R/bin_variants.R
 \name{bin_variants}
 \alias{bin_variants}
-\title{Bin Variants and calculate stats over bins}
+\title{Bin Variants}
 \usage{
 bin_variants(
   variant_metrics_df,
@@ -30,7 +30,7 @@ bin_variants(
 OUTPUT_DESCRIPTION
 }
 \description{
-FUNCTION_DESCRIPTION
+Calculate statistics over bins (genome tiles)
 }
 \details{
 DETAILS

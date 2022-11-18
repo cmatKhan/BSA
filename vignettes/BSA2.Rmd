@@ -6,261 +6,59 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-
-```{r setup, include = FALSE}
+```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>",
-  eval = FALSE
+  comment = "#>"
 )
 ```
 
-```{r vignetteSetup, echo=FALSE, message=FALSE, warning = FALSE}
+# reduction in code from 8129 characters to 4860 characters. That includes 
+# comments, spaces, headings, etc
+
+```{r setup}
 library(BSA)
 library(tidyverse)
 library(foreach)
+library(GenomicRanges)
+library(BSgenome.CneoformansVarGrubiiKN99.NCBI.ASM221672v1)
+
+kn99_genome = BSgenome.CneoformansVarGrubiiKN99.NCBI.ASM221672v1
 ```
 
-# Gather KN99a and TDY1993 (parent strain) data
-
-```{r, eval = FALSE}
-parent_strains = c("KN99a", "TDY1993")
-parents = foreach(
-  i = c("KN99a", "TDY1993"),
-  .inorder = TRUE
-  ) %do% {
-    df = read.table(
-    file = paste0("/mnt/lts/personal/chasem/DNA/EXP#067/VCFtables/", 
-                  i, 
-                  ".txt"), 
-    header = T, 
-    stringsAsFactors = F, 
-    numerals = "allow.loss")
-  
-  df$Alternative1 <- as.integer(df$Alternative1)
-  
-  df
-  }
-names(parents) = parent_strains
-```
-
-## Reduce parent strain to only variant positions
-
-`parent_variants` stores only positions where KN99a is 
-reference and TDY1993 (C8) is alternative.
-
-```{r, eval = FALSE}
-
-kn99a_tdy1993_variant_filter = parents$KN99a$Filt_Genotype == "Reference" & 
-                  parents$TDY1993$Filt_Genotype == "Alternative"
-parent_variants = parents$KN99a[kn99a_tdy1993_variant_filter,]
-```
-
-# Gather variant strain (pool) data
-
-`mySamples` will be a list of dataframes. Each frame is (row) filtered for 
-only those positions contained in `parent_variants`
-
-```{r, eval = FALSE}
-poolsBSA2 <- list.files(
-  path = "/mnt/lts/personal/chasem/DNA/EXP#031/VCF_tables") %>% 
-  sub(pattern = ".txt", replacement = "")
-
-
-samples_df_bsa2 = foreach(
-  i = poolsBSA2,
-  .inorder = TRUE,
-  .combine = 'rbind'
-) %do% {
-    df = read.table(file = paste0(
-    "/mnt/lts/personal/chasem/DNA/EXP#031/VCF_tables/", i, ".txt"), 
-    header = T, 
-    stringsAsFactors = F, 
-    numerals = "allow.loss")
-  
-  # only retain those variants which overlap kn99a vs tdy1993 variants
-  parent_filter = paste(df$CHR, df$POS, sep = "_") %in% 
-               paste(parent_variants$CHR, parent_variants$POS, sep = "_")
-  
-  df = df[parent_filter, ]
-  
-  df$Alternative1 <- as.integer(df$Alternative1)
-  
-  df$sample = i
-  
-  df
-}
-
-#names(mySamples) = poolsBSA2
-```
-
-# create a pool meta frame
-describe the samples in the sample set
-
-```{r, eval = FALSE}
-#TODO this information needs to be part of the sample sheet in the pipeline?
-pool_meta = tibble(sample = unique(samples_df_bsa2$sample)) %>%
-  mutate(batch = str_remove(sample, "\\w$")) %>%
-  mutate(cond = ifelse(str_detect(sample, "P[[:alnum:]].{1,3}I"),'inoculum', NA)) %>%
-  mutate(cond = ifelse(str_detect(sample, "P[[:alnum:]].{1,3}Y"),'ypd', cond)) %>%
-  mutate(cond = ifelse(str_detect(sample, "P[[:alnum:]].{1,3}L"),'lung', cond)) %>%
-  mutate(cond = ifelse(str_detect(sample, "P[[:alnum:]].{1,3}B"),'brain', cond)) %>%
-  mutate(bulk = ifelse(cond == "inoculum", 'low', 'high')) %>%
-  mutate(pool = str_remove(str_extract(sample, "P\\d"), "P"))
-```
-
-# Summary stats
+# Read in data from VCF and parse into dataframe
 
 ```{r}
+chr_map = tibble(seqnames = seqnames(kn99_genome), 
+                 CHR=c(seq(1:14), "M"))
 
-samples_df = readRDS(system.file("samples_df_bsa2.rds", package = "BSA"))
-pool_meta = readRDS(system.file("samples_meta_bsa2.rds", package = "BSA")) %>%
-  mutate(replicate = str_extract(batch, "\\d$"))
+input_paths = list(
+  bsa6_vcf = "/mnt/scratch/variant_calling_pipeline/bsa/results_bsa6/variant_calling/bwamem2/vcftools/group_1_merged_dusted.recode.vcf", #system.file("BSA6.IGV.vcf.gz", package="BSA"),
+  bsa6_meta = system.file("bsa6_samplesheet.rds", package="BSA")
+)
+
+meta_df = readRDS(input_paths$bsa6_meta)
+
+tmp_dir = tempdir()
+raw_samples_df = vcf_to_qtlseqr_table(input_paths$bsa6_vcf, "~/Desktop", 
+                                      parent_ref_sample = 'KN99a', 
+                                      parent_alt_sample = 'TDY1993',
+                                      parent_filter = FALSE) 
+
+samples_df = raw_samples_df %>% 
+  left_join(chr_map) %>% 
+  select(c("seqnames", colnames(raw_samples_df)[2:length(raw_samples_df)])) %>%
+  dplyr::rename(CHR = seqnames) %>% 
+  filter(!is.na(CHR)) %>%
+  arrange(sample, CHR, POS) %>% 
+  left_join(meta_df) %>%
+  # note this!
+  mutate(bulk = ifelse(cond == "inoculum", "low", "high"))
+
+samples_df = raw_samples_df %>% 
+  left_join(chr_map) %>% 
+  arrange(sample, CHR, POS) %>% 
+  left_join(meta_df) %>%
+  # note this!
+  mutate(bulk = ifelse(cond == "inoculum", "low", "high"))
 ```
-
-```{r,fig.width=10, fig.height=8}
-ggplot(left_join(samples_df, pool_meta), 
-       aes(replicate,log2(RealDepth))) + 
-  geom_violin(aes(fill=cond)) + 
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
-  facet_grid(cond~pool)
-
-```
-
-
-# replicatesBSA
-create a list of dataframes which represent comparisons between lowBulk and 
-highBulk samples -- preparing for input to QTLseqr
-
-```{r}
-replicatesBSA = foreach(
-  row = iterators::iter(sample_comparison_frame(pool_meta),by='row')
-) %do% {
-    picker2(samples_df,
-            lowBulk = row[['lowBulk']],
-            highBulk = row[['highBulk']])
-}
-
-```
-
-# sum depth, reference and alternative columsn across replicates
-
-```{r, eval = FALSE}
-
-summedPoolsBSA = df %>% 
-  left_join(pool_construction) %>% 
-  group_by(CHR,POS,Ref_Allele,ALT1,cond, pool) %>% 
-  summarize(real_depth_sum = sum(RealDepth),
-            reference_sum = sum(Reference),
-            alternative1_sum = sum(Alternative1),
-            .groups = 'keep') %>% 
-  group_by(cond, pool) %>% 
-  arrange(CHR, POS, Ref_Allele, ALT1) %>%
-  group_split()
-
-```
-
-# pooled BSA
-do the same thing with the picker2, but this time on the data set with 
-collapsed replicates
-
-```{r, eval = FALSE}
-## Making the contrasts of low and high bulk with the summed pools
-
-poolsBSA <- list() # a list of comparisons of pooled replicates (all the replicates from a specific pool) for each condition using picker()
-
-foreach(
-  i = iterators::iter(sample_comparison_frame(pool_construction), by = "row"),
-  .inorder = TRUE
-) %do% {
-  lowbulk = i[['lowBulk']]
-  highbulk = i[['highBulk']]
-}
-
-for (i in pools) { # The pools
-  for (y in c("Y", "L", "B")) {
-    lowbulk <- paste0(i, "I")
-    highbulk <- paste0(i, y)
-    if (lowbulk %in% names(summedPoolsBSA) & highbulk %in% names(summedPoolsBSA)) {
-      
-      # now, making comparisons
-      poolsBSA[[highbulk]] <- picker2(summedPoolsBSA, 
-                                      lowBulk = lowbulk, 
-                                      highBulk = highbulk)
-      
-      print(paste("Comparisons made:", highbulk, "x", lowbulk, sep = " "))
-    }
-  }
-}
-```
-
-All conditions, across pools, are now being summed together. For instance, 
-P1.1I + P1.2I + P2.1I + ...
-
-BUT we already summed P1.1 and P1.2, so just doing (P1.1I + P1.2I) + (P2.1I + P2.2I) + ...
-
-```{r}
-# Here we start summing all pools together for each condition, and then making the comparisons.
-
-allPoolsInOneBSA <- list() # This will be the list containing three itens, the sum of all inocula, all YPDs and all Inoculum.
-allPoolsInOneComparisonBSA <- list()
-
-for (y in c("I", "Y", "L", "B")) { # This loop goes around for each condition.
-  allPoolsInOneBSA[[y]] <- summedPoolsBSA[[1]][, 1:4] # The first four columns are just the information about each mutation, such as CHR and Position...
-  
-  cond <- grep(y, names(summedPoolsBSA), value = T)
-  
-  allPoolsInOneBSA[[y]]$RealDepth <- apply(
-    sapply(summedPoolsBSA[cond],
-           function(x) x$RealDepth), 1, sum) # This is another way of doing it (see line 53)
-  
-  allPoolsInOneBSA[[y]]$Reference <- apply(sapply(summedPoolsBSA[cond], function(x) x$Reference), 1, sum)
-  allPoolsInOneBSA[[y]]$Alternative1 <- apply(sapply(summedPoolsBSA[cond], function(x) x$Alternative1), 1, sum)
-}
-
-# This will analyze the comparisons between the conditions of the allPoolsInOne object
-
-for (i in c("Y", "L", "B")) {
-  lowbulk <- "I"
-  highbulk <- i
-  allPoolsInOneComparisonBSA[[i]] <- 
-    picker2(allPoolsInOneBSA, 
-            lowBulk = lowbulk, 
-            highBulk = highbulk)
-  print(paste("Comparisons made:", highbulk, "x", lowbulk, sep = " "))
-}
-```
-
-```{r}
-### FILTERING
-
-# filter top and bottom percentile by min/max depthpercentile
-
-# replicates_filteredBSA=list()
-pools_filteredBSA <- list()
-allPoolsInOne_filteredBSA <- list()
-
-
-for (i in c(names(poolsBSA)[c(-3, -6, -9, -12, -15)], 
-            names(poolsBSA)[c(3, 6, 9, 12, 15)])) {
-  print(i)
-  pools_filteredBSA[[i]] <- analyzer(poolsBSA[[i]][!is.nan(poolsBSA[[i]]$deltaSNP), ],
-    minDepthPercentile = 0.005,
-    maxDepthPercentile = 0.9, outlierFilt = "deltaSNP"
-  )
-}
-
-for (i in names(allPoolsInOneComparisonBSA)) {
-  print(i)
-  allPoolsInOne_filteredBSA[[i]] <- 
-    analyzer(allPoolsInOneComparisonBSA[[i]][!is.nan(allPoolsInOneComparisonBSA[[i]]$deltaSNP), ],
-    minDepthPercentile = 0.005, 
-    maxDepthPercentile = 0.995, 
-    outlierFilt = "deltaSNP"
-  )
-}
-
-#save.image(file = here("data/BSA2_reproduced_20220804.RData"))
-
-```
-

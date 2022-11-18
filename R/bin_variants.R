@@ -1,6 +1,6 @@
 
-#' @title Bin Variants and calculate stats over bins
-#' @description FUNCTION_DESCRIPTION
+#' @title Bin Variants
+#' @description Calculate statistics over bins (genome tiles)
 #'
 #' @param variant_metrics_df PARAM_DESCRIPTION
 #' @param tiled_genome_df PARAM_DESCRIPTION

@@ -1,0 +1,170 @@
+---
+title: "CreatePipelineSamplesheet"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{CreatePipelineSamplesheet}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+```{r setup,message=FALSE, warning = FALSE}
+library(BSA)
+library(tidyverse)
+library(readxl)
+```
+
+# Processing Pipeline sample sheet
+
+Currently, not all of these fields are actually used in the processing pipeline. 
+But, it is part of a work in progress to standardize the metadata surrounding 
+a BSA experiment such that analysis may be automated. In Daniel's metadata, 
+columns contain more than one piece of information -- eg, `Strain Alias` has an 
+erroneous P, then an integer describing the mouse, a period, an integer 
+describing the replicate, and then a letter describing the tissue (currently 
+called `condition` in the table described below). The fields are also not 
+consistent -- eg, the parsing that needs to happen for BSA2 is different than 
+BSA6.
+
+- sample (a unique name)
+- group (this will be used to process bam files together in variant calling step. 
+    group 0 signifies that the file will only be processed individually. Any other 
+    number may be used to identify other groups, eg if there are 5 files, one 
+    file to be processed individually, and then groups of 2, group might look 
+    like 0,1,1,2,2. Note that all bam files are processed individually by default)
+- pool (pool from which the sample originates. not unique across pools, eg P1-P5 and Pall)
+- replicate (replicate of a given pool, eg 1,2,3)
+- day (number of days passed in time course before harvest)
+- cond (culture condition, eg inoculum, lung, brain, ypd)
+- experiment (unique identifier of the experiment, eg BSA6)
+- runNumber (from the sequencer, eg 4726)
+- fastq_1 paths to the fastq files
+- fastq_2 paths to the fastq files
+
+After creating the samplesheet, or before, you need to move the data from `lts` 
+into your `scratch`. The assumption is that you'll make a directory to store 
+the BSA pipeline output, and in that directory, you'll make a subdirectory called 
+`data`. If you do this, then you should launch the pipeline from within the 
+experiment directory (at the same level as the `data` directory) so that the 
+relative path from `data` to the `fastq` file will be correct.
+
+# BSA2
+
+```{r}
+bsa2_df = read_excel(system.file("DanielSeqDatabase.xlsx", package = "BSA")) %>%
+  filter(str_detect(Description,'BSA2')) %>%
+  mutate(pool = str_remove(str_extract(`Strain Alias`, "P\\d"), "P"),
+         replicate = str_remove(str_remove(`Strain Alias`, "P\\d\\."), "\\w$"),
+         day = 'na',
+         cond = str_extract(`Strain Alias`, "\\w$"),
+         experiment = str_remove_all(str_replace(Experiment, "-", "_"), " ")) %>%
+  dplyr::rename(runNumber = `Run number`) %>%
+  mutate(fastq_1 = file.path(FileFolder,FirstPairFileName)) %>%
+  dplyr::rename(sample = `Strain Alias`) %>%
+  mutate(fastq_2 = str_replace(fastq_1, "_R1_", "_R2_")) %>%
+  mutate(fastq_1 = file.path("data",basename(fastq_1)),
+         fastq_2 = file.path("data",basename(fastq_2))) %>%
+  # set the group back to 1 -- process all together
+  mutate(group = 1) %>%
+  dplyr::select(sample,group, pool, cond, day, replicate, experiment, 
+                runNumber, fastq_1, fastq_2)
+
+reference_strain_df = tibble(
+  sample = c("KN99a", "TDY1993"),
+  group  = c(1,1),
+  pool   = c(1,1),
+  cond   = c(1,1),
+  day    = c(1,1),
+  replicate = c(1,1),
+  experiment =  c(1,1),
+  runNumber = c(2553, 3153),
+  fastq_1 = c('data/2553_Brent_KN99aaa_GTAC13_GAGGCGTATC_S13_R1_001.fastq.gz',
+              'data/3153_Brent_TDY1993_GTAC_33_SIC_Index2_09_ACCATAC_TGTGAG_S70_R1_001.fastq.gz'),
+  fastq_2 = c('data/2553_Brent_KN99aaa_GTAC13_GAGGCGTATC_S13_R2_001.fastq.gz',
+              'data/3153_Brent_TDY1993_GTAC_33_SIC_Index2_09_ACCATAC_TGTGAG_S70_R2_001.fastq.gz')
+)
+
+df = rbind(bsa2_df, reference_strain_df)
+
+# write out csv
+# write_csv(df, "/path/to/someplace/bsa2_samplesheet.csv")
+```
+
+
+
+
+# BSA6
+
+
+```{r, message=FALSE, warning = FALSE}
+relevel_cond = function(cond){
+  switch (cond,
+  L = "lung",
+  Y = "ypd",
+  B = "brain",
+  I = "inoculum"
+)
+}
+
+
+df = readRDS(system.file("bsa6_raw_meta.rds", package = "BSA")) %>%
+  mutate(pool = ifelse(str_detect(`Strain Alias`, "all"), 
+                       "all", 
+                       str_remove(str_extract(`Strain Alias`, "^P\\d"), "^P"))) %>%
+  mutate(tmp = str_remove(`Strain Alias`, paste0("P", pool))) %>%
+  mutate(cond = ifelse(substr(tmp,1,1) == "1", NA, substr(tmp,1,1))) %>%
+  mutate(day = ifelse(is.na(cond), 15, 8)) %>%
+  mutate(tmp = str_remove(tmp, as.character(day))) %>%
+  mutate(cond = ifelse(is.na(cond), substr(tmp,1,1), cond)) %>%
+  mutate(day = ifelse(day == 8 & cond == "Y", 1, day)) %>%
+  mutate(day = ifelse(day == 8 & cond == "I", 0, day)) %>%
+  mutate(tmp = str_remove(tmp,cond)) %>%
+  dplyr::rename(replicate = tmp) %>%
+  mutate(replicate = ifelse(replicate == "", 1,replicate)) %>%
+  dplyr::rename(runNumber = `Run number`) %>%
+  mutate(Experiment = str_remove_all(str_replace(Experiment, "-", "_"), " ")) %>%
+  dplyr::rename(experiment = Experiment) %>%
+  mutate(fastq_1 = file.path(FileFolder,FirstPairFileName)) %>%
+  dplyr::rename(sample = `Strain Alias`) %>%
+  mutate(group = ifelse(str_detect(sample, "all"), "oneMouse", "sepMouse")) %>%
+  mutate(fastq_2 = str_replace(fastq_1, "_R1_", "_R2_")) %>%
+  mutate(cond = unlist(map(cond, relevel_cond))) %>%
+  dplyr::select(sample,group, pool, cond, day, replicate, experiment, 
+                runNumber, fastq_1, fastq_2) %>%
+  mutate(fastq_1 = file.path("data",basename(fastq_1)),
+         fastq_2 = file.path("data",basename(fastq_2))) %>%
+  # set the group back to 1 -- process all together
+  mutate(group = 1)
+
+reference_strain_df = tibble(
+  sample = c("KN99a", "TDY1993"),
+  group  = c(1,1),
+  pool   = c(1,1),
+  cond   = c(1,1),
+  day    = c(1,1),
+  replicate = c(1,1),
+  experiment =  c(1,1),
+  runNumber = c(2553, 3153),
+  fastq_1 = c('data/2553_Brent_KN99aaa_GTAC13_GAGGCGTATC_S13_R1_001.fastq.gz',
+              'data/3153_Brent_TDY1993_GTAC_33_SIC_Index2_09_ACCATAC_TGTGAG_S70_R1_001.fastq.gz'),
+  fastq_2 = c('data/2553_Brent_KN99aaa_GTAC13_GAGGCGTATC_S13_R2_001.fastq.gz',
+              'data/3153_Brent_TDY1993_GTAC_33_SIC_Index2_09_ACCATAC_TGTGAG_S70_R2_001.fastq.gz')
+)
+
+df = rbind(df, reference_strain_df)
+
+#write_csv(df, "/mnt/scratch/variant_calling_pipeline/bsa6_samplesheet.csv")
+#write_tsv(df, "/mnt/scratch/variant_calling_pipeline/bsa6_samplesheet.tsv")
+```
+
+```{r}
+df
+```
+

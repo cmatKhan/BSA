@@ -17,7 +17,7 @@ value is lowDepth}
 \item{ref_freq_thres}{if ref is greater than or equal to this number, and
 depth passes threshold, call genotype Reference. note that genotype is called
 Alternative if passes depth threshold and ref_freq is less than or equal to
-1 - ref_freq_thres}
+1 - ref_freq_thres. If depth is below depth_thres, return lowDepth}
 }
 \value{
 one of undefinedGenotype, lowDepth, Reference, Alternative
@@ -27,5 +27,6 @@ internal helper function to create Filt_Genotype column. note
 this column name is from Daniel's original BSA analysis. It just means
 a column which calls genotype based on frequency of allele with RealDepth,
 which are only those bases which pass the variant caller thresholds and
-exist (not missing in the CIGAR), in the denominator
+exist (not missing in the CIGAR), in the denominator. Currently the
+three levels that may be returned are lowDepth, Rerence or Alterantive.
 }

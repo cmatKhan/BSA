@@ -35,7 +35,7 @@ chr_map = tibble(seqnames = seqnames(kn99_genome),
                  CHR=c(seq(1:14), "M"))
 
 input_paths = list(
-  bsa6_vcf = "/mnt/scratch/variant_calling_pipeline/bsa/results_bsa6/variant_calling/bwamem2/vcftools/group_1_merged_dusted.recode.vcf", #system.file("BSA6.IGV.vcf.gz", package="BSA"),
+  bsa6_vcf = system.file("BSA6.IGV.vcf.gz", package="BSA"),
   bsa6_meta = system.file("bsa6_samplesheet.rds", package="BSA")
 )
 
@@ -93,7 +93,25 @@ ggplot(aes( sample, log2(Depth))) +
   scale_y_continuous(limits = c(8,18), breaks = seq(8, 18, 1)) +
     facet_grid(group~day,scales = "free_x")
 ```
+```{r}
+x = samples_df %>% filter(sample == "P2I") %>% pull(RealDepth)
+y = samples_df %>% filter(sample == "Pall15L3") %>% pull(RealDepth)
 
+print(summary(y))
+
+print(summary(x))
+```
+
+Just to confirm, I also took these two samples and compared at the same loci. 
+They are also not the same at these loci, but are remarkably similar.
+
+```{r}
+samples_df %>% 
+  filter(sample %in% c("P2I", "Pall15L3")) %>% 
+  select(sample, CHR, POS, RealDepth) %>% 
+  pivot_wider(names_from = sample, values_from = RealDepth) %>%
+  head(20)
+```
 
 # Split the data into two groups
 

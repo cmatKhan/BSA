@@ -5,7 +5,8 @@
 #'   this column name is from Daniel's original BSA analysis. It just means
 #'   a column which calls genotype based on frequency of allele with RealDepth,
 #'   which are only those bases which pass the variant caller thresholds and
-#'   exist (not missing in the CIGAR), in the denominator
+#'   exist (not missing in the CIGAR), in the denominator. Currently the
+#'   three levels that may be returned are lowDepth, Rerence or Alterantive.
 #'
 #' @param depth depth of a given variant, at a given position
 #' @param ref_freq frequency of a given variant, at a given position
@@ -14,10 +15,13 @@
 #' @param ref_freq_thres if ref is greater than or equal to this number, and
 #'   depth passes threshold, call genotype Reference. note that genotype is called
 #'   Alternative if passes depth threshold and ref_freq is less than or equal to
-#'   1 - ref_freq_thres
+#'   1 - ref_freq_thres. If depth is below depth_thres, return lowDepth
 #'
 #' @return one of undefinedGenotype, lowDepth, Reference, Alternative
-set_genotype = function(depth, ref_freq, depth_thres, ref_freq_thres){
+set_genotype = function(depth,
+                        ref_freq,
+                        depth_thres,
+                        ref_freq_thres){
 
 
   genotype = 'undefinedGenotype'
@@ -72,10 +76,15 @@ tidy_metrics = function(data_mat, values_cname, rnames, cnames){
 #' @param gds_outdir directory to which to write the gds file
 #' @param depth_thres minimum required (filtered) depth to consider calling
 #'   a genotype. Less than this and the genotype is labelled lowDepth, Default: 5
+#' @param parent_ref_sample name of the sample which identifies the 'reference'
+#'   parent strain, eg for cryptococcus KN99alpha. Default is NULL
+#' @param parent_alt_sample name of the sample which identifies the 'alternate'
+#'   parent strain, eg for cryptococcus TDY1993 Default is NULL
+#' @param parent_filter Boolean, default FALSE. Set to TRUE to retain only
+#' those loci which in which `parent_ref_strain` is labelled Reference and
+#' `parent_alt_strain` is labelled Alternate
 #' @param ref_freq_thres minimum (greater than or equal to) required percentage
 #'   for a genotype to be called Reference or Alternative, Default: 0.9
-#' @param parent_filter Boolean. Set to TRUE to retain only those loci which
-#'   overlap parent strains, KN99alpha and TDY1993
 #' @param single_allele_loci_only Boolean, set to TRUE to exclude all
 #'   multi allelic loci. Set to FALSE to keep all variants, Default: TRUE
 #' @param overwrite_gds if the gds already exists, skip creating and just open.
@@ -120,10 +129,20 @@ tidy_metrics = function(data_mat, values_cname, rnames, cnames){
 #' @importFrom dplyr left_join tibble mutate arrange
 vcf_to_qtlseqr_table = function(vcf_path, gds_outdir,
                                 depth_thres=5, ref_freq_thres=.9,
+                                parent_ref_sample = NULL,
+                                parent_alt_sample = NULL,
+                                parent_filter = FALSE,
                                 single_allele_loci_only = TRUE,
-                                parent_filter = TRUE,
                                 overwrite = FALSE,
                                 verbose = FALSE){
+
+  if(parent_filter &
+     (is.null(parent_ref_sample) | is.null(parent_alt_sample))){
+    stop(paste0("`parent_filter` is set to TRUE, but parent_ref_sample ",
+         "and/or parent_alt_sample are set to NULL. Either set parent_filter ",
+         "to FALSE or provide the sample names of the `parent_ref_sample` ",
+         "and `parent_alt_sample.`"))
+  }
 
   # construct output path for gds file
   vcf_name = stringr::str_remove_all(basename(vcf_path), ".vcf$|.vcf.gz")
@@ -199,64 +218,18 @@ vcf_to_qtlseqr_table = function(vcf_path, gds_outdir,
                                  gds_extracted_data$sample.id, variant_ids) %>%
     purrr::reduce(dplyr::left_join))
 
-  # create a vector which represents chr_pos of variants in
-  # the parent strains
-  if(parent_filter){
-    # CREATE PARENT FILTER
-    # ```{r, eval = FALSE}
-    #
-    # kn99a_tdy1993_variant_filter = parents$KN99a$Filt_Genotype == "Reference" &
-    #   parents$TDY1993$Filt_Genotype == "Alternative"
-    # parent_variants = parents$KN99a[kn99a_tdy1993_variant_filter,]
-    # ```
-    #
-    # # Gather variant strain (pool) data
-    #
-    # `mySamples` will be a list of dataframes. Each frame is (row) filtered for
-    # only those positions contained in `parent_variants`
-    #
-    # ```{r, eval = FALSE}
-    # poolsBSA2 <- list.files(
-    #   path = "/mnt/lts/personal/chasem/DNA/EXP#031/VCF_tables") %>%
-    #   sub(pattern = ".txt", replacement = "")
-    #
-    #
-    # samples_df_bsa2 = foreach(
-    #   i = poolsBSA2,
-    #   .inorder = TRUE,
-    #   .combine = 'rbind'
-    # ) %do% {
-    #   df = read.table(file = paste0(
-    #     "/mnt/lts/personal/chasem/DNA/EXP#031/VCF_tables/", i, ".txt"),
-    #     header = T,
-    #     stringsAsFactors = F,
-    #     numerals = "allow.loss")
-    #
-    #   # only retain those variants which overlap kn99a vs tdy1993 variants
-    #   parent_filter = paste(df$CHR, df$POS, sep = "_") %in%
-    #     paste(parent_variants$CHR, parent_variants$POS, sep = "_")
-    #
-    #   df = df[parent_filter, ]
-    #
-    #   df$Alternative1 <- as.integer(df$Alternative1)
-    #
-    #   df$sample = i
-    #
-    #   df
-    # }
-    #
-    warning(paste0("PARENT FILTER NOT IMPLEMENTED -- ",
-                   "SETTING TO FALSE. NO POSITIONS ",
-                   "WILL BE FILTERED.\n"))
-    parent_filter = FALSE
-    parent_filter_vector = NULL
+  if(parent_filter & length(setdiff(c(parent_ref_sample, parent_alt_sample),
+                                    unique(depth_metrics_df$sample)) > 0)){
+    stop(paste0("`parent_filter` is set to TRUE, but either `parent_ref_sample` ",
+                sprintf("or `parent_alt_sample` is not in the sample list: %s",
+                        paste(df$sample, collapse = ","))))
   }
 
   # reshape all of the extracted data into a tidy, long data frame.
   # note that columns are named and formatted according to Daniel's
   # original table specification
   message("Creating QTLseqR table...")
-  suppressMessages(dplyr::tibble(CHR = gds_extracted_data$chromosome,
+  out = suppressMessages(dplyr::tibble(CHR = gds_extracted_data$chromosome,
                 POS = gds_extracted_data$position,
                 REF_Allele = gds_extracted_data$`$ref`,
                 ALT1 = gds_extracted_data$`$alt`,
@@ -271,13 +244,38 @@ vcf_to_qtlseqr_table = function(vcf_path, gds_outdir,
     dplyr::left_join(depth_metrics_df) %>%
     dplyr::mutate(Ref_percentage = Reference/RealDepth) %>%
     dplyr::mutate(Alt1_percentage = 1-Ref_percentage) %>%
+    # NOTE: right now the levels are hard coded as lowDepth, Reference and
+    # Alternative in the function `set_genotype`
     dplyr::mutate(Filt_Genotype = unlist(purrr::map2(RealDepth, Ref_percentage,
                                        set_genotype,
                                        depth_thres, ref_freq_thres ))) %>%
-    dplyr::arrange(sample)) %>%
-    # the following two lines apply the parent filter if it is set to TRUE
-    # otherwise, the dataframe is unfiltered at this point
-    unite("cp", CHR, POS, sep ="_", remove=FALSE) %>%
-    filter(if(parent_filter) cp %in% parent_filter_vector else TRUE) %>%
-    dplyr::select(-cp)
+    dplyr::arrange(sample))
+
+  if(parent_filter){
+    message(paste0("Filtering the rows for only those locations where ",
+                   "the reference parent strain is labelled Reference ",
+                   "and the Alternative parents train is labelled ",
+                   "Alternative..."))
+    # create a vector of the unique set of chromosome_position where the
+    # reference parent strain is labelled Reference and the Alternative parent
+    # strain is labelled Alternative
+    parent_filter_vector = out %>%
+      filter((sample == parent_ref_sample & Filt_Genotype == 'Reference') |
+               (sample == parent_alt_sample & Filt_Genotype == 'Alternative')) %>%
+      unite("cp", CHR, POS, sep ="_") %>%
+      pull(cp) %>%
+      unique()
+
+    out %>%
+      # filter out any position where the parent_ref_strain is not labelled as
+      # REF or the parent alt strain is not labelled as ALT. Also remove
+      # the parent samples
+      unite("cp", CHR, POS, sep ="_", remove=FALSE) %>%
+      filter(cp %in% parent_filter_vector,
+             !sample %in% c(parent_ref_sample, parent_alt_sample)) %>%
+      dplyr::select(-cp)
+  } else{
+    out
+  }
+
 }

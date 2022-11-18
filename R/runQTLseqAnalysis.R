@@ -128,16 +128,16 @@ runQTLseqAnalysis_local <- function(SNPset,
     SNPset %>%
     dplyr::mutate(minDP = pmin(!!rlang::sym(dp_low_col),
                                !!rlang::sym(dp_high_col)))
-
   SNPset <-
     SNPset %>%
     dplyr::group_by(!!rlang::sym(chrom_col)) %>%
     dplyr::mutate(tricubeDP =
-                    floor(tricubeStat_local(rlang::sym(coordinate_col),
+                    floor(tricubeStat_local(!!rlang::sym(coordinate_col),
                                             # TODO figure out where minDP comes
                                             # from
                                             minDP,
                                             windowSize = windowSize)))
+
 
   if (is.null(depth)) {
     message(

@@ -74,7 +74,26 @@ df = readRDS(system.file("bsa6_raw_meta.rds", package = "BSA")) %>%
   dplyr::select(sample,group, pool, cond, day, replicate, experiment, 
                 runNumber, fastq_1, fastq_2) %>%
   mutate(fastq_1 = file.path("data",basename(fastq_1)),
-         fastq_2 = file.path("data",basename(fastq_2)))
+         fastq_2 = file.path("data",basename(fastq_2))) %>%
+  # set the group back to 1 -- process all together
+  mutate(group = 1)
+
+reference_strain_df = tibble(
+  sample = c("KN99a", "TDY1993"),
+  group  = c(1,1),
+  pool   = c(1,1),
+  cond   = c(1,1),
+  day    = c(1,1),
+  replicate = c(1,1),
+  experiment =  c(1,1),
+  runNumber = c(2553, 3153),
+  fastq_1 = c('data/2553_Brent_KN99aaa_GTAC13_GAGGCGTATC_S13_R1_001.fastq.gz',
+              'data/3153_Brent_TDY1993_GTAC_33_SIC_Index2_09_ACCATAC_TGTGAG_S70_R1_001.fastq.gz'),
+  fastq_2 = c('data/2553_Brent_KN99aaa_GTAC13_GAGGCGTATC_S13_R2_001.fastq.gz',
+              'data/3153_Brent_TDY1993_GTAC_33_SIC_Index2_09_ACCATAC_TGTGAG_S70_R2_001.fastq.gz')
+)
+
+df = rbind(df, reference_strain_df)
 
 write_csv(df, "/mnt/scratch/variant_calling_pipeline/bsa6_samplesheet.csv")
 # write_tsv(df, "/mnt/scratch/variant_calling_pipeline/bsa6_samplesheet.tsv")

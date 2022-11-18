@@ -9,8 +9,10 @@ vcf_to_qtlseqr_table(
   gds_outdir,
   depth_thres = 5,
   ref_freq_thres = 0.9,
+  parent_ref_sample = NULL,
+  parent_alt_sample = NULL,
+  parent_filter = FALSE,
   single_allele_loci_only = TRUE,
-  parent_filter = TRUE,
   overwrite = FALSE,
   verbose = FALSE
 )
@@ -26,11 +28,18 @@ a genotype. Less than this and the genotype is labelled lowDepth, Default: 5}
 \item{ref_freq_thres}{minimum (greater than or equal to) required percentage
 for a genotype to be called Reference or Alternative, Default: 0.9}
 
+\item{parent_ref_sample}{name of the sample which identifies the 'reference'
+parent strain, eg for cryptococcus KN99alpha. Default is NULL}
+
+\item{parent_alt_sample}{name of the sample which identifies the 'alternate'
+parent strain, eg for cryptococcus TDY1993 Default is NULL}
+
+\item{parent_filter}{Boolean, default FALSE. Set to TRUE to retain only
+those loci which in which \code{parent_ref_strain} is labelled Reference and
+\code{parent_alt_strain} is labelled Alternate}
+
 \item{single_allele_loci_only}{Boolean, set to TRUE to exclude all
 multi allelic loci. Set to FALSE to keep all variants, Default: TRUE}
-
-\item{parent_filter}{Boolean. Set to TRUE to retain only those loci which
-overlap parent strains, KN99alpha and TDY1993}
 
 \item{verbose}{Boolean. Set to true to set the SeqArray functions to verbose.
 Default is FALSE.}

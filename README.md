@@ -11,7 +11,7 @@ issues](https://img.shields.io/github/issues/cmatKhan/BSA)](https://github.com/c
 pulls](https://img.shields.io/github/issues-pr/cmatKhan/BSA)](https://github.com/cmatKhan/BSA/pulls)
 [![Lifecycle:
 experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
-[![R-CMD-check-bioc](https://github.com/cmatKhan/BSA/actions/workflows/R-CMD-check-bioc.yaml/badge.svg)](https://github.com/cmatKhan/BSA/actions/workflows/R-CMD-check-bioc.yaml)
+[![R-CMD-check](https://github.com/cmatKhan/BSA/actions/workflows/check-bioc.yml/badge.svg)](https://github.com/cmatKhan/BSA/actions/workflows/check-bioc.yml)
 [![Codecov test
 coverage](https://codecov.io/gh/cmatKhan/BSA/branch/master/graph/badge.svg)](https://app.codecov.io/gh/cmatKhan/BSA?branch=master)
 <!-- badges: end -->

@@ -10,19 +10,25 @@
     <loc>https://cmatkhan.github.io/BSA/CONTRIBUTING.html</loc>
   </url>
   <url>
+    <loc>https://cmatkhan.github.io/BSA/LICENSE-text.html</loc>
+  </url>
+  <url>
+    <loc>https://cmatkhan.github.io/BSA/LICENSE.html</loc>
+  </url>
+  <url>
     <loc>https://cmatkhan.github.io/BSA/SUPPORT.html</loc>
   </url>
   <url>
-    <loc>https://cmatkhan.github.io/BSA/articles/BSA2.html</loc>
+    <loc>https://cmatkhan.github.io/BSA/articles/BSA3.html</loc>
   </url>
   <url>
-    <loc>https://cmatkhan.github.io/BSA/articles/BSA2_plots.html</loc>
+    <loc>https://cmatkhan.github.io/BSA/articles/BSA6.html</loc>
+  </url>
+  <url>
+    <loc>https://cmatkhan.github.io/BSA/articles/CreatePipelineSamplesheet.html</loc>
   </url>
   <url>
     <loc>https://cmatkhan.github.io/BSA/articles/index.html</loc>
-  </url>
-  <url>
-    <loc>https://cmatkhan.github.io/BSA/articles/processing_instructions.html</loc>
   </url>
   <url>
     <loc>https://cmatkhan.github.io/BSA/authors.html</loc>
@@ -37,57 +43,51 @@
     <loc>https://cmatkhan.github.io/BSA/reference/analyzer.html</loc>
   </url>
   <url>
-    <loc>https://cmatkhan.github.io/BSA/reference/binDistPlotter.html</loc>
+    <loc>https://cmatkhan.github.io/BSA/reference/bin_variants.html</loc>
   </url>
   <url>
-    <loc>https://cmatkhan.github.io/BSA/reference/binner.html</loc>
+    <loc>https://cmatkhan.github.io/BSA/reference/getG_local.html</loc>
   </url>
   <url>
-    <loc>https://cmatkhan.github.io/BSA/reference/binner2.html</loc>
-  </url>
-  <url>
-    <loc>https://cmatkhan.github.io/BSA/reference/binner3.html</loc>
-  </url>
-  <url>
-    <loc>https://cmatkhan.github.io/BSA/reference/getG.html</loc>
-  </url>
-  <url>
-    <loc>https://cmatkhan.github.io/BSA/reference/getPvals.html</loc>
+    <loc>https://cmatkhan.github.io/BSA/reference/getPvals_local.html</loc>
   </url>
   <url>
     <loc>https://cmatkhan.github.io/BSA/reference/index.html</loc>
   </url>
   <url>
-    <loc>https://cmatkhan.github.io/BSA/reference/percenter.html</loc>
-  </url>
-  <url>
-    <loc>https://cmatkhan.github.io/BSA/reference/percenter2.html</loc>
-  </url>
-  <url>
     <loc>https://cmatkhan.github.io/BSA/reference/picker2.html</loc>
   </url>
   <url>
-    <loc>https://cmatkhan.github.io/BSA/reference/plotMakerBSA.html</loc>
+    <loc>https://cmatkhan.github.io/BSA/reference/pipe.html</loc>
   </url>
   <url>
-    <loc>https://cmatkhan.github.io/BSA/reference/plotter.html</loc>
+    <loc>https://cmatkhan.github.io/BSA/reference/runGprimeAnalysis_local.html</loc>
   </url>
   <url>
-    <loc>https://cmatkhan.github.io/BSA/reference/runGprimeAnalysis.html</loc>
+    <loc>https://cmatkhan.github.io/BSA/reference/runQTLseqAnalysis_local.html</loc>
   </url>
   <url>
-    <loc>https://cmatkhan.github.io/BSA/reference/runQTLseqAnalysis.html</loc>
+    <loc>https://cmatkhan.github.io/BSA/reference/sample_comparison_frame.html</loc>
   </url>
   <url>
-    <loc>https://cmatkhan.github.io/BSA/reference/simulateConfInt.html</loc>
+    <loc>https://cmatkhan.github.io/BSA/reference/set_genotype.html</loc>
   </url>
   <url>
-    <loc>https://cmatkhan.github.io/BSA/reference/simulateSNPindex.html</loc>
+    <loc>https://cmatkhan.github.io/BSA/reference/simulateConfInt_local.html</loc>
   </url>
   <url>
-    <loc>https://cmatkhan.github.io/BSA/reference/tabler.html</loc>
+    <loc>https://cmatkhan.github.io/BSA/reference/simulateSNPindex_local.html</loc>
   </url>
   <url>
-    <loc>https://cmatkhan.github.io/BSA/reference/tricubeStat.html</loc>
+    <loc>https://cmatkhan.github.io/BSA/reference/tidy_metrics.html</loc>
+  </url>
+  <url>
+    <loc>https://cmatkhan.github.io/BSA/reference/tile_metrics.html</loc>
+  </url>
+  <url>
+    <loc>https://cmatkhan.github.io/BSA/reference/tricubeStat_local.html</loc>
+  </url>
+  <url>
+    <loc>https://cmatkhan.github.io/BSA/reference/vcf_to_qtlseqr_table.html</loc>
   </url>
 </urlset>

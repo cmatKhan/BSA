@@ -1,11 +1,11 @@
-pandoc: 2.14.2
-pkgdown: 2.0.6
+pandoc: 2.19.2
+pkgdown: 2.0.7
 pkgdown_sha: ~
 articles:
-  BSA2: BSA2.html
-  BSA2_plots: BSA2_plots.html
-  processing_instructions: processing_instructions.html
-last_built: 2022-08-05T00:39Z
+  BSA3: BSA3.html
+  BSA6: BSA6.html
+  CreatePipelineSamplesheet: CreatePipelineSamplesheet.html
+last_built: 2023-06-08T23:04Z
 urls:
   reference: https://cmatkhan.github.io/BSA/reference
   article: https://cmatkhan.github.io/BSA/articles

@@ -1,7 +1,7 @@
 url: https://cmatkhan.github.io/BSA/
 template:
   bootstrap: 5
-  bootswatch: cyborg
+  bootswatch: simplex
   bslib:
     base_font: {google: "Roboto"}
     heading_font: {google: "Roboto Slab"}

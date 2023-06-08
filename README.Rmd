@@ -19,7 +19,6 @@ knitr::opts_chunk$set(
 [![GitHub issues](https://img.shields.io/github/issues/cmatKhan/BSA)](https://github.com/cmatKhan/BSA/issues)
 [![GitHub pulls](https://img.shields.io/github/issues-pr/cmatKhan/BSA)](https://github.com/cmatKhan/BSA/pulls)
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
-[![BioC status](http://www.bioconductor.org/shields/build/release/bioc/BSA.svg)](https://bioconductor.org/checkResults/release/bioc-LATEST/BSA)
 [![R-CMD-check-bioc](https://github.com/cmatKhan/BSA/actions/workflows/R-CMD-check-bioc.yaml/badge.svg)](https://github.com/cmatKhan/BSA/actions/workflows/R-CMD-check-bioc.yaml)
 [![Codecov test coverage](https://codecov.io/gh/cmatKhan/BSA/branch/master/graph/badge.svg)](https://app.codecov.io/gh/cmatKhan/BSA?branch=master)
 <!-- badges: end -->
@@ -39,49 +38,16 @@ remotes::install_github("cmatKhan/BSA")
 
 ```
 
-# EVERYTHING BELOW IS TEMPLATE
+## Usage
 
-## Installation instructions
+The first thing that you will need to do iscreate a samplesheet and process 
+the data through the [BSA processing pipeline](https://github.com/cmatKhan/variant_calling_and_bsa).
 
-Get the latest stable `R` release from [CRAN](http://cran.r-project.org/). Then install `BSA` from [Bioconductor](http://bioconductor.org/) using the following code:
+Instructions for creating this samplesheet are in the Article (above) called 
+`CreatePipelineSampleSheet`.
 
-```{r 'install', eval = FALSE}
-if (!requireNamespace("BiocManager", quietly = TRUE)) {
-    install.packages("BiocManager")
-}
-
-BiocManager::install("BSA")
-```
-
-And the development version from [GitHub](https://github.com/cmatKhan/BSA) with:
-
-```{r 'install_dev', eval = FALSE}
-BiocManager::install("cmatKhan/BSA")
-```
-## Example
-
-This is a basic example which shows you how to solve a common problem:
-
-```{r example, eval = requireNamespace('BSA')}
-library("BSA")
-## basic example code
-```
-
-What is special about using `README.Rmd` instead of just `README.md`? You can include R chunks like so:
-
-```{r cars}
-summary(cars)
-```
-
-You'll still need to render `README.Rmd` regularly, to keep `README.md` up-to-date.
-
-You can also embed plots, for example:
-
-```{r pressure, echo = FALSE}
-plot(pressure)
-```
-
-In that case, don't forget to commit and push the resulting figure files, so they display on GitHub!
+Next, you will be using the functions in this package to analyze the data. An 
+example of the process are in `BSA3` and `BSA6`.
 
 ## Citation
 

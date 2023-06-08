@@ -31,6 +31,9 @@ are weighted by physical distance from the focal SNP.
 \details{
 DETAILS
 }
+\note{
+example from QTLSeqR: df_filt_4mb$Gprime <- tricubeStat(POS, Stat = GStat, WinSize = 4e6)
+}
 \seealso{
 \code{\link{getG}} for G statistic calculation
 

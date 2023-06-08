@@ -1,5 +1,5 @@
 ---
-title: "BSA2"
+title: "BSA3"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{BSA2}
@@ -9,7 +9,8 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  eval=FALSE
 )
 ```
 

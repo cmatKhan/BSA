@@ -6,20 +6,10 @@ pkgVer <- function(pkg) {
 
 c(
 
-    bibentry(bibtype="manual",
-        title = "BSA -temp1",
-        author = personList(
-            as.person("cmatKhan")
-        ),
-        year = format(Sys.Date(), "%Y"),
-        url = "http://www.bioconductor.org/packages/BSA",
-        note = pkgVer('BSA'),
-        doi = '10.18129/B9.bioc.BSA'
-    ),
     bibentry(bibtype="article",
-        title = "BSA - temp2",
+        title = "Daniel's paper placeholder",
         author = personList(
-            as.person("cmatKhan")
+            as.person("Agustihno, Daniel")
         ),
         year = format(Sys.Date(), "%Y"),
         journal = "bioRxiv",

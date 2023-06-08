@@ -13,7 +13,7 @@
 #'   to calculate the statitics. Magwene et. al recommend a window size of ~25
 #'   cM, but also recommend optionally trying several window sizes to test if
 #'   peaks are over- or undersmoothed. Default: 2e+06
-#' @notes example from QTLSeqR: df_filt_4mb$Gprime <- tricubeStat(POS, Stat = GStat, WinSize = 4e6)
+#' @note example from QTLSeqR: df_filt_4mb$Gprime <- tricubeStat(POS, Stat = GStat, WinSize = 4e6)
 #'
 #' @return Returns a vector of the weighted statistic caluculted with a
 #'   tricube smoothing kernel

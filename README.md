@@ -14,6 +14,8 @@ experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](h
 [![R-CMD-check](https://github.com/cmatKhan/BSA/actions/workflows/check-bioc.yml/badge.svg)](https://github.com/cmatKhan/BSA/actions/workflows/check-bioc.yml)
 [![Codecov test
 coverage](https://codecov.io/gh/cmatKhan/BSA/branch/master/graph/badge.svg)](https://app.codecov.io/gh/cmatKhan/BSA?branch=master)
+[![Software
+DOI](https://zenodo.org/badge/520266986.svg)](https://zenodo.org/badge/latestdoi/520266986)
 <!-- badges: end -->
 
 The goal of `BSA` is to reimplement Daniel’s BSA2 code in a package

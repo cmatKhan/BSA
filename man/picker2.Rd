@@ -4,23 +4,13 @@
 \alias{picker2}
 \title{Transform VCF Table for QTLseqR}
 \usage{
-picker2(
-  samples_with_meta_df,
-  low_bulk_sample,
-  high_bulk_sample,
-  sample_col = "sample",
-  bulk_col = "bulk"
-)
+picker2(df, sample_col = "sample", bulk_col = "bulk")
 }
 \arguments{
-\item{samples_with_meta_df}{A dataframe representing samples
-\code{\link[BSA]{vcf_to_qtlseqr_table}} joined with the sample metadata}
-
-\item{low_bulk_sample}{String. The name of the sample (and of the element in
-the vcf_df list) corresponding to the Low Bulk.}
-
-\item{high_bulk_sample}{The name of the sample (and of the element in
-the vcf_df list) corresponding to the High Bulk.}
+\item{df}{A dataframe representing samples
+\code{\link[BSA]{vcf_to_qtlseqr_table}} joined with the sample metadata
+AND filtered so that only the samples to be compared are present. Note
+that the levels of the column \code{bulk} must be greater than 1}
 
 \item{sample_col}{name of the column with the sample names. Must contain
 the low_bulk_sample and high_bulk_sample. Default 'sample'.}

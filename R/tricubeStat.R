@@ -30,9 +30,16 @@ tricubeStat_local <- function(POS, Stat, windowSize = 2e6)
 {
   if (windowSize <= 0)
     stop("A positive smoothing window is required")
-  stats::predict(
-    locfit::locfit(
-      Stat ~ locfit::lp(POS, h = windowSize, deg = 0)
-      ),
-    POS)
+  tryCatch(
+      stats::predict(
+        locfit::locfit(
+          Stat ~ locfit::lp(POS, h = windowSize, deg = 0)),
+        POS),
+    error = function(e){
+      browser()
+      futile.logger::flog.error(paste0('Error fitting local polynomial model ',
+                                'in tricuteStat_local on position: ', POS))
+      stop(e)
+    })
+
 }

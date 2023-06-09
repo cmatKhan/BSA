@@ -34,7 +34,6 @@ getPvals_local <-
            outlierFilter = c("deltaSNP", "Hampel"),
            filterThreshold)
   {
-
     if (outlierFilter == "deltaSNP") {
 
       if (abs(filterThreshold) >= 0.5) {
@@ -47,23 +46,23 @@ getPvals_local <-
       message("Using Hampel's rule to filter outlier regions")
       lnGprime <- log(Gprime)
 
-      medianLogGprime <-median(lnGprime)
+      medianLogGprime <-median(lnGprime, na.rm = TRUE)
 
       # calculate left median absolute deviation for the trimmed G' prime set
       MAD <-
-        median(medianLogGprime - lnGprime[lnGprime <= medianLogGprime])
+        median(medianLogGprime - lnGprime[lnGprime <= medianLogGprime], na.rm = TRUE)
 
       # Trim the G prime set to exclude outlier regions (i.e. QTL) using Hampel's rule
       trimGprime <-
-        Gprime[lnGprime - median(lnGprime) <= 5.2 * MAD]
+        Gprime[lnGprime - median(lnGprime, na.rm = TRUE) <= 5.2 * MAD]
     }
 
-    medianTrimGprime <- median(trimGprime)
+    medianTrimGprime <- median(trimGprime, na.rm = TRUE)
 
     # estimate the mode of the trimmed G' prime set using the half-sample method
     message("Estimating the mode of a trimmed G prime set using the 'modeest' package...")
     modeTrimGprime <-
-      modeest::mlv(x = trimGprime, bw = 0.5, method = "hsm")[1]
+      modeest::mlv(x = trimGprime, bw = 0.5, method = "hsm", na.rm=TRUE)[1]
 
     muE <- log(medianTrimGprime)
     varE <- abs(muE - log(modeTrimGprime))

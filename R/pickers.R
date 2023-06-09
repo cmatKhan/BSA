@@ -6,12 +6,10 @@
 #'   the table in a way that the QTLseq package can use. Uses two element of
 #'   a list to create a table that can be used by the package QTLseq.
 #'
-#' @param samples_with_meta_df A dataframe representing samples
+#' @param df A dataframe representing samples
 #'   \code{\link[BSA]{vcf_to_qtlseqr_table}} joined with the sample metadata
-#' @param low_bulk_sample String. The name of the sample (and of the element in
-#'   the vcf_df list) corresponding to the Low Bulk.
-#' @param high_bulk_sample The name of the sample (and of the element in
-#'   the vcf_df list) corresponding to the High Bulk.
+#'   AND filtered so that only the samples to be compared are present. Note
+#'   that the levels of the column `bulk` must be greater than 1
 #' @param sample_col name of the column with the sample names. Must contain
 #'   the low_bulk_sample and high_bulk_sample. Default 'sample'.
 #' @param bulk_col name of the column which stores the different sample comparisons.
@@ -27,22 +25,20 @@
 #' @export
 #'
 #' @importFrom dplyr mutate
-picker2 = function(samples_with_meta_df,
-                   low_bulk_sample,
-                   high_bulk_sample,
+#' @importFrom futile.logger flog.debug
+picker2 = function(df,
                    sample_col = "sample",
                    bulk_col = "bulk") {
 
-  if(length(setdiff(c(sample_col, bulk_col),
-                    colnames(samples_with_meta_df))) > 0){
-    stop(paste0(sprintf("sample_col: %s and bulk_col: %s ", sample_col, bulk_col ),
-                 "must be in the colnames of the input dataframe."))
+  if(length(unique(df$bulk)) < 2){
+    stop(paste0('There is only 1 level in the `bulk` column -- ',
+                'two are necessary for the comparison'))
   }
 
-  if (!low_bulk_sample %in% samples_with_meta_df[[sample_col]] |
-      !high_bulk_sample %in% samples_with_meta_df[[sample_col]]) {
-    stop(paste0("Confirm if the bulks' names are present",
-         "in the SNP set (vcf file) provided."))
+  if(length(setdiff(c(sample_col, bulk_col),
+                    colnames(df))) > 0){
+    stop(paste0(sprintf("sample_col: %s and bulk_col: %s ", sample_col, bulk_col ),
+                 "must be in the colnames of the input dataframe."))
   }
 
   # after joining, reduce the joined dataframe down to just these columns
@@ -51,7 +47,7 @@ picker2 = function(samples_with_meta_df,
                   bulk_col)
 
   if(length(setdiff(select_cols,
-                    colnames(samples_with_meta_df))) > 0){
+                    colnames(df))) > 0){
     stop(paste0("the following columns must be in the input dataframe: ",
                 paste(select_cols, collapse=",")))
   }
@@ -89,9 +85,7 @@ picker2 = function(samples_with_meta_df,
   )
 
   # transform the dataframe
-  samples_with_meta_df %>%
-    filter(!!rlang::sym(sample_name_col) %in%
-             c(low_bulk_sample, high_bulk_sample)) %>%
+  df %>%
     select(all_of(select_cols)) %>%
     pivot_wider(names_from = !!rlang::sym(names_from_col),
                 values_from = all_of(value_cols)) %>%

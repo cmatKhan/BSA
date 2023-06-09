@@ -14,52 +14,387 @@ knitr::opts_chunk$set(
 )
 ```
 
-# reduction in code from 8129 characters to 4860 characters. That includes 
-# comments, spaces, headings, etc
-
 ```{r setup}
 library(BSA)
 library(tidyverse)
 library(foreach)
 library(GenomicRanges)
+library(here)
 library(BSgenome.CneoformansVarGrubiiKN99.NCBI.ASM221672v1)
 
 kn99_genome = BSgenome.CneoformansVarGrubiiKN99.NCBI.ASM221672v1
 ```
 
+# Introduction
+
+This vignette will not run from your computer if you simply copy/paste the 
+code -- it is intended to show how to modify the commands and code to run 
+a BSA experiment of slightly different structure from BSA6.
+
+*However*, the BSA6 vignette (also provided -- see articles) will run 
+for you if you simply copy/paste it from the screen to your computer after 
+installing the `BSA` package. All the data to run that is provided in the 
+package when you install it.
+
 # Read in data from VCF and parse into dataframe
+
+Update the paths appropriately for your system and data.
 
 ```{r}
 chr_map = tibble(seqnames = seqnames(kn99_genome), 
                  CHR=c(seq(1:14), "M"))
 
 input_paths = list(
-  bsa6_vcf = "/mnt/scratch/variant_calling_pipeline/bsa/results_bsa6/variant_calling/bwamem2/vcftools/group_1_merged_dusted.recode.vcf", #system.file("BSA6.IGV.vcf.gz", package="BSA"),
-  bsa6_meta = system.file("bsa6_samplesheet.rds", package="BSA")
+  bsa3_vcf = "/mnt/scratch/bsa/bsa3_results/variant_annote/bwamem2/snpeff/group_1_merged_dusted.recode_sorted_sorted_snpEff.ann.vcf",
+  bsa3_meta = "/mnt/scratch/bsa/bsa3_samplesheet_single.csv"
 )
 
-meta_df = readRDS(input_paths$bsa6_meta)
+meta_df = read_csv(input_paths$bsa3_meta)
 
 tmp_dir = tempdir()
-raw_samples_df = vcf_to_qtlseqr_table(input_paths$bsa6_vcf, "~/Desktop", 
+raw_samples_df = vcf_to_qtlseqr_table(input_paths$bsa3_vcf, here("data"), 
                                       parent_ref_sample = 'KN99a', 
                                       parent_alt_sample = 'TDY1993',
-                                      parent_filter = FALSE) 
+                                      parent_filter = TRUE) 
 
-samples_df = raw_samples_df %>% 
-  left_join(chr_map) %>% 
-  select(c("seqnames", colnames(raw_samples_df)[2:length(raw_samples_df)])) %>%
-  dplyr::rename(CHR = seqnames) %>% 
-  filter(!is.na(CHR)) %>%
+samples_df = raw_samples_df %>%
+  filter(!sample %in% c("KN99a", "TDY1993")) %>%
   arrange(sample, CHR, POS) %>% 
   left_join(meta_df) %>%
   # note this!
   mutate(bulk = ifelse(cond == "inoculum", "low", "high"))
 
-samples_df = raw_samples_df %>% 
-  left_join(chr_map) %>% 
-  arrange(sample, CHR, POS) %>% 
-  left_join(meta_df) %>%
-  # note this!
-  mutate(bulk = ifelse(cond == "inoculum", "low", "high"))
+meta_df = meta_df %>%
+  filter(!sample %in% c("KN99a", "TDY1993"))
+
 ```
+
+# Take a looksee
+
+```{r}
+samples_df %>%
+  filter(!is.na(group)) %>%
+ggplot(aes( sample, log2(Depth))) + 
+    geom_violin(aes(fill=factor(cond))) + 
+    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+          text = element_text(size = 20)) +
+  scale_y_continuous(limits = c(8,18), breaks = seq(8, 18, 1)) +
+    facet_grid(group~day,scales = "free_x")
+```
+
+# Collapse over replicates and conditions
+
+```{r}
+# Sum over replicates
+# For each given condition, the result is that there will be only one pool. So 
+# if we had 2 replicates per pool, there will now be only one pool of YPD at 15 
+# days. If there are 5 pools, each done in a different mouse, then there will be 
+# 5 independent records (pools) of that YPD at 15 days
+summed_replicates = collapse_bsa_data(samples_df, c('CHR','POS','REF_Allele','ALT1',
+                                'bulk','cond','pool','day'),
+                              c('pool', 'cond'))
+
+summed_replicates_meta = summed_replicates %>%
+  select(sample, pool, cond, bulk) %>% 
+  distinct(sample, .keep_all = TRUE)
+
+# Sum over both replicates AND pools
+# This creates a single record for a given condition, eg YPD at 15 days
+summed_conditions = collapse_bsa_data(samples_df,
+                                  c('CHR','POS','REF_Allele','ALT1',
+                                    'bulk', 'cond','day'),
+                                  'cond')
+
+summed_conditions_meta = summed_conditions %>%
+  select(sample, cond, bulk) %>% 
+  distinct(sample, .keep_all = TRUE)
+```
+
+# `picker2` is one of Daniel's functions
+
+It basically reformats the data frame and adds some additional metrics which 
+are expected by the qtlSeqR fucntions
+
+```{r}
+# this function will run the `picker2` function on the oneMouse and sepMouse 
+# groups
+run_picker2 = function(metadata_df,
+                       sample_df, 
+                       grouping_var,
+                       base_cond_in_each_group){
+
+  experiment_crosses =
+    sample_comparison_frame(metadata_df,
+                            grouping_var = grouping_var,
+                            base_cond_in_each_group = base_cond_in_each_group)
+
+  out = foreach(
+    row = iterators::iter(experiment_crosses, by='row'),
+    .inorder = TRUE
+  ) %do% {
+    input_df = sample_df %>% 
+      filter(sample %in% c(row[['lowBulk']], row[['highBulk']]))
+    if (length(unique(input_df$bulk)) < 2){
+      futile.logger::flog.info(paste0('Both samples ',
+                                      row[['lowBulk']],
+                                      ' and ',
+                                      row[['highBulk']], 
+                                      ' are `low` bulk. ',
+                                      'Setting the second sample ',
+                                      'to `high` for `picker2`'))
+      input_df = input_df %>%
+        mutate(bulk = ifelse(sample == row[['highBulk']], 'high', bulk))
+    }
+    tryCatch(
+          picker2(input_df), 
+             error = function(e){
+               futile.logger::flog.error(e)
+             })
+  }
+  names(out) = experiment_crosses$highBulk
+  
+  out
+}
+
+bsa_data_sets = list(
+  no_collapse = run_picker2(meta_df,
+                samples_df,
+                grouping_var = 'pool',
+                base_cond_in_each_group = TRUE),
+  
+  replicate_collapse = run_picker2(
+    summed_replicates_meta,
+    summed_replicates,
+    grouping_var = 'pool',
+    base_cond_in_each_group = TRUE
+  ),
+  condition_collapse = run_picker2(
+    summed_conditions_meta,
+    summed_conditions,
+    'cond',
+    base_cond_in_each_group = FALSE
+  )
+)
+
+```
+
+# Another daniel function, `analyzer`
+
+`analyzer` is a wrapper of a number of slightly modified `qtlSeqR` functions. 
+This is what adds the BSA metrics.
+
+```{r}
+run_analyzer_on_bsa_set = function(bsa_set){
+  foreach(
+        # each df is for a given sample
+        set_name = names(bsa_set),
+        .inorder = TRUE
+      ) %do% { 
+        df = bsa_set[[set_name]]
+        tryCatch(
+          analyzer(df[!is.nan(df$deltaSNP),], 
+               minDepthPercentile = 0.1, 
+               maxDepthPercentile = 0.995, 
+               outlierFilt = "Hampel",
+               filter_chr_list = c("CP022335.1", "G418", "NAT")),
+                 error = function(e){
+                   futile.logger::flog.error(paste0(
+                     'Error in: ',
+                     set_name, '; ',
+                     e
+                   ))
+                 }, 
+                 finally = {})
+
+    }
+}
+
+filtered_bsa_data_sets = map(bsa_data_sets, run_analyzer_on_bsa_set)
+
+names(filtered_bsa_data_sets$no_collapse) = 
+  names(bsa_data_sets$no_collapse)
+
+names(filtered_bsa_data_sets$replicate_collapse) = 
+  names(bsa_data_sets$replicate_collapse)
+
+names(filtered_bsa_data_sets$condition_collapse) =
+  names(bsa_data_sets$condition_collapse)
+```
+
+# Visualize
+
+```{r}
+tiled_genome_df = 
+  tileGenome(seqlengths(kn99_genome), 
+             tilewidth = 1000, 
+             cut.last.tile.in.chrom = TRUE) %>% 
+  as_tibble() %>% 
+  left_join(chr_map) %>%
+  dplyr::rename(CHROM=seqnames)
+```
+
+```{r}
+bin_variants_by_group = function(bsa_set, collapse_level){
+  foreach(
+    sample_name = names(bsa_set),
+    .inorder = TRUE
+  ) %do% {
+    df = bsa_set[[sample_name]]
+    futile.logger::flog.debug(sample_name)
+    x = bin_variants(df, 
+                 tiled_genome_df,
+                 seqlengths(kn99_genome),
+                 "CHROM") %>%
+      mutate(sample = sample_name,
+             collapse_level = collapse_level)
+  }
+}
+
+bin_list = list(
+  
+  binned_filtered_summedReplicates = 
+    bin_variants_by_group(filtered_bsa_data_sets$replicate_collapse,
+                          'replicate') %>%
+  do.call('rbind',.),
+  
+  binned_filtered_summedConditions = 
+    bin_variants_by_group(filtered_bsa_data_sets$condition_collapse,
+                          'condition') %>%
+    do.call('rbind', .)
+) 
+
+graphing_df = bin_list %>%
+  do.call('rbind', .)
+```
+
+
+```{r}
+pool_min_max_df = graphing_df %>% 
+  ungroup() %>%
+  filter(collapse_level == "replicate") %>%
+  separate(sample, c('pool', 'cond'), sep = "_", remove = FALSE) %>%
+  select(-pool) %>%
+  group_by(CHROM, tile, cond) %>% 
+  summarize(pool_max_smoothed_allele_freq   = max(mean_smoothed_delta_snp, na.rm = TRUE),
+            pool_min_smoothed_allele_freq   = min(mean_smoothed_delta_snp, na.rm = TRUE),
+            pool_max_unsmoothed_allele_freq = max(mean_deltaSNP, na.rm = TRUE),
+            pool_min_unsmoothed_allele_freq = min(mean_deltaSNP, na.rm = TRUE),
+            .groups = 'keep') %>%
+  separate(tile, c("binFloor","binCeiling"), sep = ",") %>%
+  ungroup() %>%
+  pivot_longer(starts_with("pool")) %>%
+  mutate(min_max = paste0("pool_allele_freq_", str_extract(name, "max|min")),
+         smoothed = ifelse(str_extract(name, "smoothed|unsmoothed") == 'smoothed', TRUE, FALSE)) %>%
+  select(-name) %>%
+  pivot_wider(names_from = min_max, values_from = value) %>%
+  arrange(cond, CHROM, binFloor) %>%
+  arrange(smoothed) %>%
+  select(cond, CHROM,binFloor,binCeiling,smoothed, 
+         pool_allele_freq_min, pool_allele_freq_max) %>%
+  mutate(binFloor = as.numeric(binFloor), binCeiling = as.numeric(binCeiling))
+
+condition_collapsed_df = graphing_df %>%
+  ungroup() %>%
+  filter(collapse_level == "condition") %>% 
+  mutate(cond = sample) %>%
+  select(cond,significance, CHROM, binFloor, binCeiling, 
+         binMiddle, mean_deltaSNP, mean_smoothed_delta_snp) %>%
+  pivot_longer(c(mean_deltaSNP, mean_smoothed_delta_snp)) %>%
+  mutate(smoothed = ifelse(str_detect(name, "smoothed"), TRUE, FALSE)) %>%
+  dplyr::rename(condition_allele_freq=value) %>%
+  select(-name) %>%
+  arrange(cond, CHROM, binFloor) %>%
+  arrange(smoothed) %>%
+  select(cond,significance, CHROM,binFloor, 
+         binCeiling,smoothed, condition_allele_freq)
+
+x = pool_min_max_df %>%  
+  mutate(binFloor = as.numeric(binFloor), binCeiling = as.numeric(binCeiling)) %>%
+  left_join(condition_collapsed_df) %>%
+  filter(complete.cases(.)) %>%
+  mutate(binMiddle = (binFloor+binCeiling )/ 2) %>%
+    select(cond,significance,CHROM,binFloor, 
+         binCeiling,binMiddle,smoothed,pool_allele_freq_min, 
+         pool_allele_freq_max, condition_allele_freq)
+
+
+# TODO this needs to be checked
+#The SNPindex.LOW should be the same for YPD and Lungs....
+MaxAndMins = filtered_bsa_data_sets$condition_collapse$YPD %>% 
+  select(c(CHROM,POS,REF,ALT, SNPindex.LOW)) %>%
+  mutate(min_SNPchange = -1*SNPindex.LOW, max_SNPchange = 1-SNPindex.LOW) %>% 
+  select(-SNPindex.LOW)
+
+#This mutation was erased in the addition of the drug marker in the C8 parent (It was in the arm).
+MaxAndMins=MaxAndMins %>% 
+  filter(!(CHROM=="chr2" & 
+             (POS==283162 | POS==283652| 
+                (POS>466000 & POS<467000)))) 
+```
+
+```{r}
+plot_by_chrom = function(chr_name){
+  
+  color_palette = c('YPD' = 'grey', 'Lung' = 'red')
+  
+  x %>%
+    mutate(cond = factor(cond)) %>%
+  filter(CHROM==chr_name, cond %in% c("Lung", "YPD"), 
+         smoothed == TRUE) %>%
+  ggplot(aes(binMiddle/1000, condition_allele_freq)) +
+    geom_line(data = filter(MaxAndMins, CHROM == chr_name), 
+              aes(POS/1000, min_SNPchange)) +
+    geom_line(data = filter(MaxAndMins, CHROM == chr_name), 
+              aes(POS/1000, max_SNPchange)) +
+    geom_pointrange(aes(ymin=pool_allele_freq_min,
+                        ymax=pool_allele_freq_max,
+                        x=binMiddle/1000,
+                        y=condition_allele_freq,
+                        colour=cond,
+                        alpha=significance,
+                        order="combine"), 
+                    na.rm = TRUE) +
+  scale_color_manual(values = color_palette) +
+    labs(title=paste0("Chromosome ", chr_name), 
+         x=paste0("Position on chromosome ",
+                  chr_name," (kb)"),
+         y="Change in allele frequency (BSA)", 
+         color="Pool")+
+    geom_hline(yintercept = c(0), color="black", size=0.6)+
+    scale_x_continuous(breaks = seq(from=0,
+                                    to=seqlengths(kn99_genome)[[chr_name]]/1000, 
+                                    by=100), 
+                       limits=c(0, seqlengths(kn99_genome)[[chr_name]]/1000), 
+                       expand = c(0, 0))+
+    scale_y_continuous(breaks = c(-1,-0.75,-0.5, -0.25, 0,0.25,0.5,0.75,1), 
+                       limits = c(-1.05,1.05), 
+                       expand = c(0,0)) +
+    theme(#legend.title = element_text(size=18),
+      legend.position = "right",
+      axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1),
+      plot.title = element_blank(),
+      legend.text = element_text(size=16),
+      axis.title=element_text(size=20),
+      axis.title.y =element_text(margin = margin(r=25, t=0, l=5, b=0)),
+      axis.title.x =element_text(margin = margin(r=0, t=25, l=0, b=5)),
+      axis.text=element_text(size = 20),
+      axis.ticks.length = unit(0.3,"cm"),
+      panel.grid.major=element_blank(),
+      panel.grid.minor=element_blank(),
+      panel.background = element_rect(fill = "white",colour = "black", size=1),
+      text=element_text(family="sans"))
+}
+
+plt_list = map(seqlevels(kn99_genome), plot_by_chrom)
+
+names(plt_list) = paste0("chr",chr_map$CHR)
+
+map(names(plt_list), ~ggsave(
+  file.path(here('data/BSA3_plots'),paste0(.,'.png')),
+  plt_list[[.]],
+  width=15,
+  height=7))
+
+ggsave('data/BSA3_plts/chr2.png', plt_list$chr2, width=20, height=9)
+```
+

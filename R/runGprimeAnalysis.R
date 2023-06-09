@@ -79,32 +79,31 @@ runGprimeAnalysis_local <-
       dplyr::mutate(tricubeDeltaSNP = tricubeStat_local(POS = POS, Stat = deltaSNP, windowSize, ...))
 
     message("Calculating G and G' statistics...")
-    SNPset <- SNPset %>%
+    # note that the warnings from tricuteStat are from the fitting procedure
+    # see https://github.com/bmansfeld/QTLseqr/issues/24#issuecomment-521498811
+    SNPset %>%
       dplyr::mutate(
         G = getG_local(
           LowRef = AD_REF.LOW,
           HighRef = AD_REF.HIGH,
           LowAlt = AD_ALT.LOW,
-          HighAlt = AD_ALT.HIGH
-        ),
-        Gprime = tricubeStat_local(
-          POS = POS,
-          Stat = G,
-          windowSize = windowSize,
-          ...
-        )
-      ) %>%
+          HighAlt = AD_ALT.HIGH)) %>%
+      dplyr::mutate(
+        Gprime = ifelse(!is.na(G),
+                        tricubeStat_local(POS = POS,
+                                          Stat = G,
+                                          windowSize = windowSize),
+                        NA)) %>%
       dplyr::ungroup() %>%
       dplyr::mutate(
-        pvalue = getPvals_local(
-          Gprime = Gprime,
-          deltaSNP = deltaSNP,
-          outlierFilter = outlierFilter,
-          filterThreshold = filterThreshold
-        ),
-        negLog10Pval = -log10(pvalue),
-        qvalue = stats::p.adjust(p = pvalue, method = "BH")
-      )
-
-    return(as.data.frame(SNPset))
+        pvalue = ifelse(!is.na(G) & !is.na(Gprime),
+                        getPvals_local(
+                          Gprime = Gprime,
+                          deltaSNP = deltaSNP,
+                          outlierFilter = outlierFilter,
+                          filterThreshold = filterThreshold),
+                        NA)) %>%
+      dplyr::mutate(negLog10Pval = -log10(pvalue),
+                    qvalue = stats::p.adjust(p = pvalue, method = "BH")) %>%
+      as.data.frame()
   }

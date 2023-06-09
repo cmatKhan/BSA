@@ -63,59 +63,134 @@ sample_comparison_frame = function(pool_df,
 
   # check colnames of dataframe against expected colnames
   expected_colnames = c(grouping_var, condition_var, "sample")
-  if(length(setdiff(expected_colnames, colnames(pool_df))) != 0 &
-     base_cond_in_each_group) {
+
+  if(any(!expected_colnames %in% colnames(pool_df)) & base_cond_in_each_group) {
     stop(paste0("input dataframe colnames must possess a field named sample, ",
                 "and at least the grouping_var and conditon_var ",
-                 sprintf("in any order: %s",
-                         paste(expected_colnames, collapse=","))))
+                sprintf("in any order: %s",
+                        paste(expected_colnames, collapse=","))))
   }
+
+  grouping_sym = rlang::sym(grouping_var)
+  condition_sym = rlang::sym(condition_var)
 
   # group the dataframe on grouping_var, and then split into a list of
   # dataframes where each item is one group
   if(base_cond_in_each_group){
-        # on each of the individual group frames, take the cartesian product of
-        # the comparison condition sample. For example if the base_comparison_condition
-        # is inoculum(i), and the batches are defined as A and B, and the condition
-        # variable contains levels lung and brain, then the result here would be
-        # two records: [A_i vs A_lung], [A_i vs A_brain].
-    pool_df %>%
-      dplyr::group_by(!!rlang::sym(grouping_var)) %>%
-      dplyr::group_split() %>%
-      purrr::map(
-        ~expand.grid(
-          (dplyr::pull(dplyr::filter(.,!!rlang::sym(condition_var) ==
-                                       base_comparison_condition),
-                sample)),
-          .$sample) %>%
-          # note that Var1 and Var2 are default colnames from expand.grid()
-            dplyr::distinct(Var2, .keep_all = TRUE) %>%
-            dplyr::mutate(Var1 = as.character(Var1), Var2 = as.character(Var2)) %>%
-            dplyr::filter(Var1 != Var2)) %>%
-      # combine the list of tables into a single table again
-      do.call('rbind', .) %>%
+    group_split_df = pool_df %>%
+      dplyr::group_by(!!grouping_sym) %>%
+      dplyr::group_split()
+
+    df_list = purrr::map(group_split_df, function(df) {
+      comparison_condition_sample = df %>%
+        dplyr::filter(!!condition_sym == base_comparison_condition) %>%
+        dplyr::pull(sample)
+
+      expand_grid_df = expand.grid(comparison_condition_sample, df$sample) %>%
+        dplyr::distinct(Var2, .keep_all = TRUE) %>%
+        dplyr::mutate(Var1 = as.character(Var1), Var2 = as.character(Var2)) %>%
+        dplyr::filter(Var1 != Var2)
+
+      expand_grid_df
+    })
+
+    # combine the list of tables into a single table again
+    result_df = do.call('rbind', df_list) %>%
       # rename the Var1 and Var2
       dplyr::rename(!!rlang::sym(var1_name) := Var1,
                     !!rlang::sym(var2_name) := Var2)
   } else{
     low_bulk_condition = pool_df %>%
-      dplyr::filter(!!rlang::sym(condition_var) == base_comparison_condition) %>%
+      dplyr::filter(!!condition_sym == base_comparison_condition) %>%
       dplyr::pull(sample)
 
     if(length(low_bulk_condition) > 1){
       stop("There is more than 1 low bulk condition -- ",
-      "setting base_cond_in_each_group failed. Consider splitting up ",
-      "the dataframe and running this function on parts, or set ",
-      "base_cond_in_each_group to TRUE and allow those conditions which ",
-      "do not have base conditions to be dropped.")
+           "setting base_cond_in_each_group failed. Consider splitting up ",
+           "the dataframe and running this function on parts, or set ",
+           "base_cond_in_each_group to TRUE and allow those conditions which ",
+           "do not have base conditions to be dropped.")
     }
+
     high_bulk_conditions = pool_df %>%
-      dplyr::filter(!!rlang::sym(condition_var) !=
+      dplyr::filter(!!condition_sym !=
                       base_comparison_condition) %>%
       dplyr::pull(sample)
-    expand.grid(low_bulk_condition, high_bulk_conditions) %>%
-    dplyr::rename(!!rlang::sym(var1_name) := Var1,
-                  !!rlang::sym(var2_name) := Var2)
+
+    result_df = expand.grid(low_bulk_condition, high_bulk_conditions) %>%
+      dplyr::rename(!!rlang::sym(var1_name) := Var1,
+                    !!rlang::sym(var2_name) := Var2)
   }
 
+  result_df
 }
+#
+# chatGPT suggested the code above as a more readable implemenation of the code
+# below -- this is kept for comparison purposes
+#
+# sample_comparison_frame = function(pool_df,
+#                                    grouping_var = "batch",
+#                                    condition_var = "cond",
+#                                    base_comparison_condition = "inoculum",
+#                                    var1_name = 'lowBulk',
+#                                    var2_name = 'highBulk',
+#                                    base_cond_in_each_group = TRUE){
+#
+#   # check colnames of dataframe against expected colnames
+#   expected_colnames = c(grouping_var, condition_var, "sample")
+#   if(length(setdiff(expected_colnames, colnames(pool_df))) != 0 &
+#      base_cond_in_each_group) {
+#     stop(paste0("input dataframe colnames must possess a field named sample, ",
+#                 "and at least the grouping_var and conditon_var ",
+#                  sprintf("in any order: %s",
+#                          paste(expected_colnames, collapse=","))))
+#   }
+#
+#   # group the dataframe on grouping_var, and then split into a list of
+#   # dataframes where each item is one group
+#   if(base_cond_in_each_group){
+#         # on each of the individual group frames, take the cartesian product of
+#         # the comparison condition sample. For example if the base_comparison_condition
+#         # is inoculum(i), and the batches are defined as A and B, and the condition
+#         # variable contains levels lung and brain, then the result here would be
+#         # two records: [A_i vs A_lung], [A_i vs A_brain].
+#     pool_df %>%
+#       dplyr::group_by(!!rlang::sym(grouping_var)) %>%
+#       dplyr::group_split() %>%
+#       purrr::map(
+#         ~expand.grid(
+#           (dplyr::pull(dplyr::filter(.,!!rlang::sym(condition_var) ==
+#                                        base_comparison_condition),
+#                 sample)),
+#           .$sample) %>%
+#           # note that Var1 and Var2 are default colnames from expand.grid()
+#             dplyr::distinct(Var2, .keep_all = TRUE) %>%
+#             dplyr::mutate(Var1 = as.character(Var1), Var2 = as.character(Var2)) %>%
+#             dplyr::filter(Var1 != Var2)) %>%
+#       # combine the list of tables into a single table again
+#       do.call('rbind', .) %>%
+#       # rename the Var1 and Var2
+#       dplyr::rename(!!rlang::sym(var1_name) := Var1,
+#                     !!rlang::sym(var2_name) := Var2)
+#   } else{
+#     low_bulk_condition = pool_df %>%
+#       dplyr::filter(!!rlang::sym(condition_var) == base_comparison_condition) %>%
+#       dplyr::pull(sample)
+#
+#     if(length(low_bulk_condition) > 1){
+#       stop("There is more than 1 low bulk condition -- ",
+#       "setting base_cond_in_each_group failed. Consider splitting up ",
+#       "the dataframe and running this function on parts, or set ",
+#       "base_cond_in_each_group to TRUE and allow those conditions which ",
+#       "do not have base conditions to be dropped.")
+#     }
+#     high_bulk_conditions = pool_df %>%
+#       dplyr::filter(!!rlang::sym(condition_var) !=
+#                       base_comparison_condition) %>%
+#       dplyr::pull(sample)
+#     expand.grid(low_bulk_condition, high_bulk_conditions) %>%
+#     dplyr::rename(!!rlang::sym(var1_name) := Var1,
+#                   !!rlang::sym(var2_name) := Var2)
+#   }
+#
+# }

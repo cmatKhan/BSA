@@ -52,20 +52,10 @@ tmp_dir = tempdir()
 raw_samples_df = vcf_to_qtlseqr_table(input_paths$bsa6_vcf, "~/Desktop", 
                                       parent_ref_sample = 'KN99a', 
                                       parent_alt_sample = 'TDY1993',
-                                      parent_filter = FALSE) 
+                                      parent_filter = TRUE) 
 
 samples_df = raw_samples_df %>% 
-  left_join(chr_map) %>% 
-  select(c("seqnames", colnames(raw_samples_df)[2:length(raw_samples_df)])) %>%
-  dplyr::rename(CHR = seqnames) %>% 
-  filter(!is.na(CHR)) %>%
-  arrange(sample, CHR, POS) %>% 
-  left_join(meta_df) %>%
-  # note this!
-  mutate(bulk = ifelse(cond == "inoculum", "low", "high"))
-
-samples_df = raw_samples_df %>% 
-  left_join(chr_map) %>% 
+  filter(!sample %in% c("KN99a", "TDY1993")) %>%
   arrange(sample, CHR, POS) %>% 
   left_join(meta_df) %>%
   # note this!
@@ -139,35 +129,13 @@ the `summed_replicate` data, and then by condition to create the
 `summed_condition` data.
 
 ```{r}
-collapse_data = function(df_with_meta, grouping_conditions, sample_columns){
-  
-  if(length(setdiff(grouping_conditions, colnames(df_with_meta))) > 0){
-    stop(sprintf("there is a grouping condition column which is not in the dataframe colnames"))
-  }
-  
-  df_with_meta %>%
-  # convert character vector to a vector of symbols, 
-  # then unquote that vector of symbols with !!!
-  # https://stackoverflow.com/a/52572383
-  group_by(!!!syms(grouping_conditions)) %>% 
-  summarize(RealDepth    = sum(RealDepth),
-            Depth        = sum(Depth),
-            Reference    = sum(Reference),
-            Alternative1 = sum(Alternative1),
-            .groups = 'keep') %>% 
-  unite("sample", !!!syms(sample_columns), remove = FALSE) %>%
-  group_by(sample) %>% 
-  arrange(CHR, POS, REF_Allele, ALT1) %>%
-  ungroup()
-}
-
 # Sum over replicates
 # For each given condition, the result is that there will be only one pool. So 
 # if we had 2 replicates per pool, there will now be only one pool of YPD at 15 
 # days. If there are 5 pools, each done in a different mouse, then there will be 
 # 5 independent records (pools) of that YPD at 15 days
 summed_replicates_split = map(group_split, 
-                              collapse_data, 
+                              collapse_bsa_data, 
                               c('CHR','POS','REF_Allele','ALT1',
                                 'bulk','cond','pool','day'),
                               c('pool', 'cond', 'day'))
@@ -179,7 +147,7 @@ summed_replicates_meta = summed_replicates_split %>%
 # Sum over both replicates AND pools
 # This creates a single record for a given condition, eg YPD at 15 days
 summed_conditions_split = map(group_split, 
-                              collapse_data, 
+                              collapse_bsa_data, 
                               c('CHR','POS','REF_Allele','ALT1',
                                 'bulk', 'cond','day'),
                               c('cond', 'day'))
@@ -213,9 +181,25 @@ run_picker2 = function(group_name,
     row = iterators::iter(experiment_crosses, by='row'),
     .inorder = TRUE
   ) %do% {
-    picker2(sample_df, 
-            low_bulk_sample = row[['lowBulk']], 
-            high_bulk_sample = row[['highBulk']])
+      input_df = sample_df %>% 
+        filter(sample %in% c(row[['lowBulk']], row[['highBulk']]))
+      if (length(unique(input_df$bulk)) < 2){
+        futile.logger::flog.info(paste0('Both samples ',
+                                      row[['lowBulk']],
+                                      ' and ',
+                                      row[['highBulk']], 
+                                      ' are `low` bulk. ',
+                                      'Setting the second sample ',
+                                      'to `high` for `picker2`'))
+      input_df = input_df %>%
+        mutate(bulk = ifelse(sample == row[['highBulk']], 'high', bulk))
+      }
+      tryCatch(picker2(input_df), 
+               error = function(e){
+                 futile.logger::flog.error(
+                   paste0('row: ', row," ; error: ", e)
+                 )
+               })
   }
   names(out) = experiment_crosses$highBulk
   

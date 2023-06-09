@@ -33,7 +33,6 @@ analyzer = function(SNPcomparison,
                      bulkSize = 20,
                      outlierFilt = "deltaSNP",
                      filter_chr_list = NULL) {
-
   # filter the SNP comparison frame -- remove na, and filter out
   # chromosomes passed filter_chr_list
   fltr_SNPcomparison = SNPcomparison %>%

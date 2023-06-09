@@ -14,7 +14,7 @@ a list to create a table that can be used by the package QTLseq."><!-- mathjax -
     
     <a class="navbar-brand me-2" href="../index.html">BSA</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -65,30 +65,16 @@ a list to create a table that can be used by the package QTLseq.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">picker2</span><span class="op">(</span></span>
-<span>  <span class="va">samples_with_meta_df</span>,</span>
-<span>  <span class="va">low_bulk_sample</span>,</span>
-<span>  <span class="va">high_bulk_sample</span>,</span>
-<span>  sample_col <span class="op">=</span> <span class="st">"sample"</span>,</span>
-<span>  bulk_col <span class="op">=</span> <span class="st">"bulk"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">picker2</span><span class="op">(</span><span class="va">df</span>, sample_col <span class="op">=</span> <span class="st">"sample"</span>, bulk_col <span class="op">=</span> <span class="st">"bulk"</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
-    <dl><dt>samples_with_meta_df</dt>
+    <dl><dt>df</dt>
 <dd><p>A dataframe representing samples
-<code><a href="vcf_to_qtlseqr_table.html">vcf_to_qtlseqr_table</a></code> joined with the sample metadata</p></dd>
-
-
-<dt>low_bulk_sample</dt>
-<dd><p>String. The name of the sample (and of the element in
-the vcf_df list) corresponding to the Low Bulk.</p></dd>
-
-
-<dt>high_bulk_sample</dt>
-<dd><p>The name of the sample (and of the element in
-the vcf_df list) corresponding to the High Bulk.</p></dd>
+<code><a href="vcf_to_qtlseqr_table.html">vcf_to_qtlseqr_table</a></code> joined with the sample metadata
+AND filtered so that only the samples to be compared are present. Note
+that the levels of the column <code>bulk</code> must be greater than 1</p></dd>
 
 
 <dt>sample_col</dt>

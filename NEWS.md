@@ -1,3 +1,24 @@
+# BSA 1.1.0
+
+BSA3 runs from data on my scratch -- this is intended to show how to modify 
+BSA6 to run on a different experiment design. However, BSA3 does not run from 
+package data (and isn't intended to).
+
+BSA6 is confimed to work from package data
+
+## significant changes
+
+the analyzer function and all that it wraps has been updated to `na.rm` -- the 
+ramifications of this haven't been well thought through, but they should be.
+
+## minor changes
+
+`picker2` was updated so that input is an already sample-filtered dataframe
+
+## new deps
+
+futile.logger was added
+
 # BSA 1.0.0
 
 The documentation at this point should be minimally helpful, and much of the 

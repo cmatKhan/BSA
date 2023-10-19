@@ -37,7 +37,7 @@ remotes::install_github("cmatKhan/BSA")
 
 The first thing that you will need to do iscreate a samplesheet and
 process the data through the [BSA processing
-pipeline](https://github.com/cmatKhan/variant_calling_and_bsa).
+pipeline](https://github.com/BrentLab/callvariants).
 
 Instructions for creating this samplesheet are in the Article (above)
 called `CreatePipelineSampleSheet`.

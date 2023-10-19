@@ -5,7 +5,9 @@ articles:
   BSA3: BSA3.html
   BSA6: BSA6.html
   CreatePipelineSamplesheet: CreatePipelineSamplesheet.html
-last_built: 2023-09-08T21:17Z
+  c8_incuding_conditions_rnaseq: c8_incuding_conditions_rnaseq.html
+  c8_variants: c8_variants.html
+last_built: 2023-10-19T20:11Z
 urls:
   reference: https://cmatkhan.github.io/BSA/reference
   article: https://cmatkhan.github.io/BSA/articles

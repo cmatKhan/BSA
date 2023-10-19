@@ -1,0 +1,40 @@
+---
+title: "c8_incuding_conditions_rnaseq"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{c8_incuding_conditions_rnaseq}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval=FALSE
+)
+```
+
+```{r setup}
+library(BSA)
+library(tidyverse)
+library(DESeq2)
+library(readxl)
+```
+
+```{r}
+data_path = '/scratch/mblab/chasem/bsa/data/exp069'
+nf_samplesheet = read_excel(
+  system.file("DanielSeqDatabase.xlsx", package="BSA")) %>%
+  filter(Experiment == 'EXP069') %>%
+  select(`Strain Alias`, FirstPairFileName) %>%
+  dplyr::rename(sample = `Strain Alias`, 
+                fastq_1 = FirstPairFileName) %>%
+  mutate(fastq_2 = '',
+         strandedness='reverse') %>%
+  mutate(fastq_1 = file.path(data_path,fastq_1)) %>%
+  select(sample,fastq_1,fastq_2,strandedness)
+
+# write_csv(nf_samplesheet, "/mnt/scratch/bsa/exp_069_samplesheet.csv")
+```
+

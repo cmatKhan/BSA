@@ -7,3 +7,8 @@ dev
 inst/doc
 docs
 data
+inst/allClinical.ann.gds
+inst/allClinical.ann.vcf
+inst/kn99a_vs_c8_20230703.csv
+inst/kn99_genes.csv
+results/

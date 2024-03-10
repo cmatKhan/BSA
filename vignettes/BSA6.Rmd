@@ -42,17 +42,23 @@ chr_map = tibble(seqnames = seqnames(kn99_genome),
 # The example uses the bwamem2 output from the current pipeline, and is  
 # recommended
 input_paths = list(
-  bsa6_vcf = system.file('group_1_merged_dusted.recode.vcf.gz', package="BSA"),
+  bsa6_vcf = system.file("BSA6.IGV.vcf.gz", package="BSA"), #system.file('group_1_merged_dusted.recode.vcf.gz', package="BSA"),
   bsa6_meta = system.file("bsa6_samplesheet.rds", package="BSA")
 )
 
 meta_df = readRDS(input_paths$bsa6_meta)
 
 tmp_dir = tempdir()
-raw_samples_df = vcf_to_qtlseqr_table(input_paths$bsa6_vcf, "~/Desktop", 
+raw_samples_df = vcf_to_qtlseqr_table(input_paths$bsa6_vcf, tmp_dir, 
                                       parent_ref_sample = 'KN99a', 
                                       parent_alt_sample = 'TDY1993',
-                                      parent_filter = TRUE) 
+                                      parent_filter = TRUE)
+
+# translate chr to seqnames if using daniel's data
+raw_samples_df = raw_samples_df %>% 
+  left_join(chr_map) %>%
+  mutate(CHR = seqnames) %>%
+  select(-seqnames)
 
 samples_df = raw_samples_df %>% 
   filter(!sample %in% c("KN99a", "TDY1993")) %>%
@@ -422,7 +428,7 @@ MaxAndMins=MaxAndMins %>%
 ```{r}
 chr_name = "CP022322.1"
 
-x %>%
+plt = x %>%
   filter(CHROM==chr_name, cond %in% c("lung", "ypd"), smoothed == TRUE) %>%
   unite("combine", cond,significance, remove = FALSE) %>%
   ggplot(aes(binMiddle/1000, condition_allele_freq)) +
@@ -464,6 +470,8 @@ x %>%
       panel.background = element_rect(fill = "white",colour = "black", size=1),
       text=element_text(family="sans"))+
     facet_grid(day~group)
+
+ggsave('data/bwamem2_plot_daniel.png', plt, width=60, height=40, units="cm")
 ```
 
 ```{r}

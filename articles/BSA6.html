@@ -8,10 +8,10 @@
 <meta name="description" content="BSA">
 <title>BSA6 • BSA</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.2.2/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.2.2/bootstrap.bundle.min.js"></script><link href="../deps/Roboto-0.4.7/font.css" rel="stylesheet">
-<link href="../deps/JetBrains_Mono-0.4.7/font.css" rel="stylesheet">
-<link href="../deps/Roboto_Slab-0.4.7/font.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Roboto-0.4.8/font.css" rel="stylesheet">
+<link href="../deps/JetBrains_Mono-0.4.8/font.css" rel="stylesheet">
+<link href="../deps/Roboto_Slab-0.4.8/font.css" rel="stylesheet">
 <!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
 <!-- bootstrap-toc --><script src="https://cdn.jsdelivr.net/gh/afeld/bootstrap-toc@v1.0.1/dist/bootstrap-toc.min.js" integrity="sha256-4veVQbu7//Lk5TSmc7YV48MxtMy98e26cf5MrgZYnwo=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="BSA6">
@@ -46,7 +46,9 @@
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <a class="dropdown-item" href="../articles/BSA3.html">BSA3</a>
     <a class="dropdown-item" href="../articles/BSA6.html">BSA6</a>
+    <a class="dropdown-item" href="../articles/BSA_run_21.html">BSA_run_21</a>
     <a class="dropdown-item" href="../articles/CreatePipelineSamplesheet.html">CreatePipelineSamplesheet</a>
+    <a class="dropdown-item" href="../articles/bsa_strain_genotype_check.html">bsa_strain_genotype_check</a>
     <a class="dropdown-item" href="../articles/c8_incuding_conditions_rnaseq.html">c8_incuding_conditions_rnaseq</a>
     <a class="dropdown-item" href="../articles/c8_variants.html">c8_variants</a>
   </div>
@@ -114,17 +116,23 @@ this notebook</p>
 <span><span class="co"># The example uses the bwamem2 output from the current pipeline, and is  </span></span>
 <span><span class="co"># recommended</span></span>
 <span><span class="va">input_paths</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>  bsa6_vcf <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">'group_1_merged_dusted.recode.vcf.gz'</span>, package<span class="op">=</span><span class="st">"BSA"</span><span class="op">)</span>,</span>
+<span>  bsa6_vcf <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"BSA6.IGV.vcf.gz"</span>, package<span class="op">=</span><span class="st">"BSA"</span><span class="op">)</span>, <span class="co">#system.file('group_1_merged_dusted.recode.vcf.gz', package="BSA"),</span></span>
 <span>  bsa6_meta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"bsa6_samplesheet.rds"</span>, package<span class="op">=</span><span class="st">"BSA"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">meta_df</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="va">input_paths</span><span class="op">$</span><span class="va">bsa6_meta</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">tmp_dir</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">raw_samples_df</span> <span class="op">=</span> <span class="fu"><a href="../reference/vcf_to_qtlseqr_table.html">vcf_to_qtlseqr_table</a></span><span class="op">(</span><span class="va">input_paths</span><span class="op">$</span><span class="va">bsa6_vcf</span>, <span class="st">"~/Desktop"</span>, </span>
+<span><span class="va">raw_samples_df</span> <span class="op">=</span> <span class="fu"><a href="../reference/vcf_to_qtlseqr_table.html">vcf_to_qtlseqr_table</a></span><span class="op">(</span><span class="va">input_paths</span><span class="op">$</span><span class="va">bsa6_vcf</span>, <span class="va">tmp_dir</span>, </span>
 <span>                                      parent_ref_sample <span class="op">=</span> <span class="st">'KN99a'</span>, </span>
 <span>                                      parent_alt_sample <span class="op">=</span> <span class="st">'TDY1993'</span>,</span>
-<span>                                      parent_filter <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> </span>
+<span>                                      parent_filter <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># translate chr to seqnames if using daniel's data</span></span>
+<span><span class="va">raw_samples_df</span> <span class="op">=</span> <span class="va">raw_samples_df</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span><span class="va">chr_map</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>CHR <span class="op">=</span> <span class="va">seqnames</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="op">-</span><span class="va">seqnames</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">samples_df</span> <span class="op">=</span> <span class="va">raw_samples_df</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span> </span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="op">!</span><span class="va">sample</span> <span class="op"><a href="https://rdrr.io/pkg/BiocGenerics/man/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"KN99a"</span>, <span class="st">"TDY1993"</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
@@ -453,7 +461,7 @@ three levels of aggregate data).</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">chr_name</span> <span class="op">=</span> <span class="st">"CP022322.1"</span></span>
 <span></span>
-<span><span class="va">x</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
+<span><span class="va">plt</span> <span class="op">=</span> <span class="va">x</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">CHROM</span><span class="op">==</span><span class="va">chr_name</span>, <span class="va">cond</span> <span class="op"><a href="https://rdrr.io/pkg/BiocGenerics/man/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"lung"</span>, <span class="st">"ypd"</span><span class="op">)</span>, <span class="va">smoothed</span> <span class="op">==</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
 <span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/unite.html" class="external-link">unite</a></span><span class="op">(</span><span class="st">"combine"</span>, <span class="va">cond</span>,<span class="va">significance</span>, remove <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">binMiddle</span><span class="op">/</span><span class="fl">1000</span>, <span class="va">condition_allele_freq</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
@@ -494,7 +502,9 @@ three levels of aggregate data).</p>
 <span>      panel.grid.minor<span class="op">=</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_blank</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>      panel.background <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_rect</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="st">"white"</span>,colour <span class="op">=</span> <span class="st">"black"</span>, size<span class="op">=</span><span class="fl">1</span><span class="op">)</span>,</span>
 <span>      text<span class="op">=</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>family<span class="op">=</span><span class="st">"sans"</span><span class="op">)</span><span class="op">)</span><span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_grid.html" class="external-link">facet_grid</a></span><span class="op">(</span><span class="va">day</span><span class="op">~</span><span class="va">group</span><span class="op">)</span></span></code></pre></div>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_grid.html" class="external-link">facet_grid</a></span><span class="op">(</span><span class="va">day</span><span class="op">~</span><span class="va">group</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsave.html" class="external-link">ggsave</a></span><span class="op">(</span><span class="st">'data/bwamem2_plot_daniel.png'</span>, <span class="va">plt</span>, width<span class="op">=</span><span class="fl">60</span>, height<span class="op">=</span><span class="fl">40</span>, units<span class="op">=</span><span class="st">"cm"</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">x</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">CHROM</span><span class="op">==</span><span class="va">chr_name</span>, <span class="va">cond</span> <span class="op"><a href="https://rdrr.io/pkg/BiocGenerics/man/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"lung"</span>, <span class="st">"ypd"</span><span class="op">)</span>, <span class="va">smoothed</span> <span class="op">==</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>

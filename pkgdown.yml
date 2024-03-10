@@ -1,13 +1,15 @@
-pandoc: 2.19.2
+pandoc: 3.1.11
 pkgdown: 2.0.7
 pkgdown_sha: ~
 articles:
   BSA3: BSA3.html
   BSA6: BSA6.html
+  BSA_run_21: BSA_run_21.html
   CreatePipelineSamplesheet: CreatePipelineSamplesheet.html
+  bsa_strain_genotype_check: bsa_strain_genotype_check.html
   c8_incuding_conditions_rnaseq: c8_incuding_conditions_rnaseq.html
   c8_variants: c8_variants.html
-last_built: 2023-10-19T20:11Z
+last_built: 2024-03-10T21:44Z
 urls:
   reference: https://cmatkhan.github.io/BSA/reference
   article: https://cmatkhan.github.io/BSA/articles

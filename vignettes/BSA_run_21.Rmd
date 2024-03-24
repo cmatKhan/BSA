@@ -49,15 +49,15 @@ tmp_dir = tempdir()
 # note that after some investigation, I found that there is no freebayes labelled
 # ALTERNATE with ref_percentage greater than .60. Hence, I lowered the ref_freq_thres
 # to allow more data to be included in the analysis
-raw_samples_df = vcf_to_qtlseqr_table(input_paths$vcf, tmp_dir, 
-                                      parent_ref_sample = 'KN99a', 
+raw_samples_df = vcf_to_qtlseqr_table(input_paths$vcf, tmp_dir,
+                                      parent_ref_sample = 'KN99a',
                                       parent_alt_sample = 'C8',
                                       ref_freq_thres = 0.7,
-                                      parent_filter = TRUE) 
+                                      parent_filter = TRUE)
 
-samples_df = raw_samples_df %>% 
+samples_df = raw_samples_df %>%
   filter(!sample %in% c("KN99a", "C8")) %>%
-  arrange(sample, CHR, POS) %>% 
+  arrange(sample, CHR, POS) %>%
   left_join(meta_df) %>%
   # note this!
   mutate(bulk = ifelse(condition == "inoculum", "low", "high"))
@@ -190,7 +190,9 @@ run_analyzer_on_bsa_set = function(bsa_set){
       ) %do% { 
         df = bsa_set[[set_name]]
         tryCatch(
-          analyzer(df[!is.nan(df$deltaSNP),], 
+          # 0.1
+          # 0.995
+          analyzer(df[!is.nan(df$deltaSNP),],
                minDepthPercentile = 0.1, 
                maxDepthPercentile = 0.995, 
                outlierFilt = "Hampel",
@@ -356,7 +358,7 @@ plot_by_chrom = function(plotting_frame, chr_name, ypd_condition, exp_condition1
   plotting_frame %>%
     mutate(condition = factor(condition)) %>%
   filter(CHROM==chr_name, condition %in% c(exp_condition1, exp_condition2, "YPD_0_24"), 
-         smoothed == TRUE) %>%
+         smoothed == FALSE) %>%
   ggplot(aes(binMiddle/1000, condition_allele_freq)) +
     geom_line(data = filter(MaxAndMins, CHROM == chr_name), 
               aes(POS/1000, min_SNPchange)) +
@@ -403,7 +405,7 @@ plot_by_chrom = function(plotting_frame, chr_name, ypd_condition, exp_condition1
 
 #plt_list = map(seqlevels(kn99_genome), plot_by_chrom)
 
-plot_by_chrom(x, seqnames(kn99_genome)[[3]], 'YPD_0_24', 'Lung_9_0', 'Lung_9_24')
+plot_by_chrom(x, seqnames(kn99_genome)[[12]], 'YPD_0_24', 'Lung_16_24', 'Lung_9_0')
 
 # map(names(plt_list), ~ggsave(
 #   file.path(here('data/BSA3_plots'),paste0(.,'.png')),
@@ -412,5 +414,16 @@ plot_by_chrom(x, seqnames(kn99_genome)[[3]], 'YPD_0_24', 'Lung_9_0', 'Lung_9_24'
 #   height=7))
 # 
 # ggsave('data/BSA3_plts/chr2.png', plt_list$chr2, width=20, height=9)
+```
+
+```{r}
+library(VariantExperiment)
+ve <- makeVariantExperimentFromVCF(input_paths$vcf,
+                                   out.dir = tempfile(),
+                                   fmt.import=c('AD',
+                                                'DP',
+                                                'PL',
+                                                'GQ'),
+                                   sample.info='~/code/BSA/sample_info.txt')
 ```
 

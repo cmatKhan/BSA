@@ -31,12 +31,12 @@ kn99_genome = BSgenome.CneoformansVarGrubiiKN99.NCBI.ASM221672v1
 
 ```{r}
 input_vcf_tables = list.files(
-  "/mnt/scratch/genotype_check/run_21_wgs_results/variants/filtered/tables",
+  "/mnt/scratch/genotype_check/run_21_wgs_result_markers/variants/filtered/tables",
   full.names = TRUE)
 names(input_vcf_tables) = str_remove(basename(input_vcf_tables), "_freebayes_filtered.tsv")
 input_vcf_tables = as.list(input_vcf_tables)
 
-bsa_vcf = "/mnt/scratch/bsa/parent_strain_results/variants/filtered/1_freebayes_filtered.vcf.gz"
+bsa_vcf = "/mnt/scratch/genotype_check/run_21_wgs_results/variants/filtered/1_freebayes_filtered.vcf.gz"
 
 bsa_gds = here("data/parent_strains.gds")
 
@@ -139,10 +139,10 @@ extract_reads_by_alignment_score <- function(sample, bam_file, region, min_align
 }
 
 # Example usage
-bam_file <- "/mnt/scratch/genotype_check/run_21_wgs_result_markers/alignment/TH0003_sorted_markdups_tagged.bam"
-region <- "TH_C8_NAT_IR6:301"
-min_alignment_score <- 0  # Example threshold
-reads_df <- extract_reads_by_alignment_score('sample1',bam_file, region, min_alignment_score)
+# bam_file <- "/mnt/scratch/genotype_check/run_21_wgs_result_markers/alignment/TH0003_sorted_markdups_tagged.bam"
+# region <- "TH_C8_NAT_IR6:301"
+# min_alignment_score <- 0  # Example threshold
+# reads_df <- extract_reads_by_alignment_score('sample1',bam_file, region, min_alignment_score)
 
 bam_list=list.files("/mnt/scratch/genotype_check/run_21_wgs_result_markers/alignment",
                     pattern="*bam$", full.names=TRUE)
@@ -213,10 +213,10 @@ bsa_df = vcf_to_qtlseqr_table(bsa_vcf, tmp_dir,
                               overwrite = TRUE)
 
 parent_df = bsa_df %>%
-  filter(sample %in% c('KN99a2', 'C8Merged')) %>%
-  mutate(sample = case_when(sample == 'KN99a2' ~ 'KN99a',
-                            sample == 'C8Merged' ~ 'C8')) %>%
-  select(CHR,POS, ALT1, RealDepth, Alternative1, QUAL, sample,
+  filter(sample %in% c('KN99a', 'C8')) %>%
+  mutate(sample = case_when(sample == 'KN99a' ~ 'KN99a',
+                            sample == 'C8' ~ 'C8')) %>%
+  select(CHR,POS, REF, ALT1, RealDepth, Alternative1, QUAL, sample,
          genotype, Alt1_percentage, Reference, Ref_percentage)
 
 kn99a_df = parent_df %>%
@@ -252,44 +252,174 @@ c8_df = parent_df %>%
   arrange(desc(Alt1_percentage)) %>%
   mutate(c8 = TRUE)
 
+parent_labeling_df = kn99a_df %>%
+  filter(parent_genotype==0) %>%
+  mutate(parent = 'KN99a') %>%
+  select(-kn99a) %>%
+  bind_rows(c8_df %>%
+              filter(parent_genotype==1) %>%
+              mutate(parent = 'c8') %>%
+              select(-c8)) %>%
+  select(CHR,POS,ALT1,parent)
+
 ```
 
 ```{r}
-
-summarize_genomic_origin = function(vcf_df, region_chr=NULL, region_start=NULL, region_end=NULL){
+# UNTESTED
+# 
+# Function to identify the longest run allowing a small number of variants within
+find_longest_run_with_tolerance <- function(gt_data, tolerance = 2) {
+  runs <- rle(gt_data)
+  values <- runs$values
+  lengths <- runs$lengths
   
-  grouped_vcf_df = vcf_df %>%
-    mutate(low_depth = depth < 10) %>%
-    left_join(kn99a_df %>%
-                filter(parent_genotype_strict==1) %>%
-                select(CHR,POS, ALT1, kn99a) %>%
-                dplyr::rename(ALT=ALT1)) %>%
-    left_join(c8_df %>%
-                filter(parent_genotype_strict==1) %>%
-                select(CHR,POS,ALT1, c8) %>%
-                dplyr::rename(ALT=ALT1)) %>%
-    replace_na(list(kn99a=FALSE,c8=FALSE)) %>%
-    mutate(var_origin=case_when((kn99a & c8)~'both',
-                                (kn99a & !c8)~'kn99a',
-                                (!kn99a & c8) ~ 'C8',
-                                .default='denovo')) %>%
-    group_by(var_origin)
+  # Initialize variables to track the longest run allowing tolerance
+  max_run_length <- 0
+  max_run_start <- 1
+  max_run_end <- 1
   
-  if(!is.null(region_start)){
-    grouped_vcf_df %>%
-      ungroup() %>%
-      filter(CHR == region_chr & POS >= region_start & POS <= region_end) %>%
-      group_by(var_origin) %>%
-      reframe(region_percent = n()/nrow(.)*100,
-              region_parent_total = n(),
-              region_total_variants = nrow(.))
-  } else{
-    grouped_vcf_df %>%
-      reframe(genome_wide_percent = n()/nrow(.)*100,
-              genome_wide_parent_total = n(),
-              total_variants = nrow(.))
+  # Initialize variables for the current run
+  current_run_length <- 0
+  current_run_start <- 1
+  variants_in_run <- 0
+  
+  for (i in seq_along(lengths)) {
+    # If the current segment is reference (1) or a small number of variants within tolerance
+    if (values[i] == 1 || (values[i] == 0 && variants_in_run + lengths[i] <= tolerance)) {
+      current_run_length <- current_run_length + lengths[i]
+      if (values[i] == 0) {
+        variants_in_run <- variants_in_run + lengths[i]  # Update count of variants within this run
+      }
+    } else {
+      # End current run if the segment is a variant exceeding the tolerance
+      if (current_run_length > max_run_length) {
+        max_run_length <- current_run_length
+        max_run_end <- sum(lengths[1:i])  # Calculate the end position of the current longest run
+        max_run_start <- max_run_end - max_run_length + 1  # Calculate the start position
+      }
+      # Reset for the next run
+      current_run_length <- lengths[i] * (values[i] == 1)
+      variants_in_run <- lengths[i] * (values[i] == 0)
+    }
   }
+  
+  # Check if the last run is the longest
+  if (current_run_length > max_run_length) {
+    max_run_length <- current_run_length
+    max_run_end <- sum(lengths)  # The run ends at the last position
+    max_run_start <- max_run_end - max_run_length + 1
+  }
+  
+  # Return start, end, and length of the longest run
+  list(start = max_run_start, end = max_run_end, length = max_run_length)
 }
+
+# Usage with your data
+gt_data <- as.integer(assays(region_subset)$GT != "0")  # Assuming '0' is reference; converting to binary 0s and 1s
+tolerance = 2  # Allowing up to 2 '0's (variants) in a run
+longest_run_info <- find_longest_run_with_tolerance(gt_data, tolerance)
+
+# To apply this to the region_subset and extract the corresponding genomic coordinates:
+genomic_start <- start(region_subset)[longest_run_info$start]
+genomic_end <- end(region_subset)[longest_run_info$end]
+
+```
+
+
+```{r}
+gatk_table_path = "/mnt/scratch/genotype_check/run_21_wgs_results/output.table"
+tmp_meta = tempfile(fileext='.csv')
+coordinate_meta_df %>% dplyr::rename(sample=tube_number) %>%
+  write_csv(tmp_meta)
+col_data_path = tmp_meta
+bsae = BSA::makeBSAExperimentFromGatkTable(
+  gatk_table_path,
+  col_data_path,
+  drop_samples = c('C8', 'KN99a')
+)
+
+SummarizedExperiment::rowRanges(bsae)$c8 = SummarizedExperiment::rowRanges(bsae) %>% 
+  as_tibble() %>% 
+  left_join(c8_df %>% 
+              filter(parent_genotype==1) %>%
+              select(CHR,POS, ALT1, c8),
+            by = c('seqnames'='CHR', 'start'='POS', 'alt'='ALT1')) %>% 
+  tidyr::replace_na(list(c8=FALSE)) %>%
+  pull(c8)
+
+# get percent of strain that is c8
+percent_c8 = colSums(assays(bsae[bsae@rowRanges$c8,])$GT) / nrow(bsae[bsae@rowRanges$c8,])
+
+
+summarize_region_origin = function(sample){
+
+  col_mask = bsae@colData$sample==sample
+  region_str = bsae[,col_mask]@colData$region
+  
+  # The input string
+  regex_pattern <- "^(.*):([0-9]+)-([0-9]+)$"
+  # Using stringr::str_match to extract the components
+  matches <- str_match(region_str, regex_pattern)
+
+  # The first row contains the full match, and subsequent rows contain the captured groups
+  chr <- matches[1, 2]  # The chromosome
+  start <- as.integer(matches[1, 3])  # The start position
+  end <- as.integer(matches[1, 4])    # The end position
+  
+  row_mask=(bsae@rowRanges@seqnames==chr
+            & bsae@rowRanges@ranges@start>=start
+            & bsae@rowRanges@ranges@start<=end)
+  
+  region_subset = bsae[row_mask,col_mask]
+  
+  # find the number of positions that are not reference
+  
+  region_percent_c8 = sum(assays(region_subset)$GT)/nrow(region_subset)
+  # find the most significant run of non-reference positions. Return
+  # the start and end coordinates of that run
+  # Compute the lengths and values of runs of equal values in a vector
+  # Assuming you have a binary version of GT (1 for non-reference, 0 for reference)
+  # Creating a tibble for plotting and fitting
+  data_tibble <- tibble(
+    x = 1:nrow(assays(region_subset)$GT),
+    y = assays(region_subset)$GT[,1]
+  )
+  
+  # Fit logistic regression
+  logit_model <- glm(y ~ x, data = data_tibble, family = binomial)
+  
+  # Predict probabilities
+  data_tibble <- data_tibble %>%
+      mutate(predicted_probability = predict(logit_model, type = "response"))
+  
+  # Find the breakpoint, defined as where the predicted probability is closest to 50%
+  breakpoint <- data_tibble %>%
+      filter(abs(predicted_probability - 0.5) == min(abs(predicted_probability - 0.5))) %>%
+      dplyr::slice(1) %>%
+      dplyr::pull(x)
+
+  ggplot(data_tibble, aes(x = x, y = y)) +
+  geom_point() +
+  geom_line(aes(y = predicted_probability), color = "blue") +
+  geom_vline(xintercept = breakpoint, color = "red", linetype = "dashed")
+  
+  # Return the start and end coordinates of that run
+  tibble(
+    region_percent_c8 = region_percent_c8,
+    region_breakpoint_coord = paste0(chr,':',start+breakpoint),
+    length_from_left = breakpoint,
+    width = (end-start)+1
+  )
+  
+}
+
+region_samples = bsae@colData %>% as_tibble() %>%
+  filter(complete.cases(.)) %>%
+  pull(sample)
+names(region_samples) = region_samples
+
+region_summaries = map(region_samples, summarize_region_origin) %>%
+  bind_rows(.id = "sample")
 
 input_vcf_tables_df_list = input_vcf_tables_df %>%
   filter(!startsWith(sample, "DGK")) %>%
@@ -325,18 +455,21 @@ region_df = coordinate_meta_df %>%
   separate(coord, into = c('start', 'end'), sep='-')
 
 region_stats = function(vcf_df){
-  sample = vcf_df %>% pull(sample) %>% unique()
+  sample_i = vcf_df %>% pull(sample) %>% unique()
   
   region = region_df %>%
-    filter(sample == sample)
+    filter(sample == sample_i)
   
   region
   
-  # summarize_genomic_origin(vcf_df,
-  #                          region_chr=region$chr,
-  #                          region_start=region$start,
-  #                          region_end=region$end)
-  
+  if (nrow(region) == 0){
+    return(NULL)
+  } else{
+  summarize_genomic_origin(vcf_df,
+                           region_chr=region$chr,
+                           region_start=region$start,
+                           region_end=region$end)
+  }
 }
 
 region_wgs_var_summaries = map(group_split(input_vcf_tables_df_list), region_stats)
